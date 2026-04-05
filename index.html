@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KONG CRM — No Limits Grappling Academy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- SET NEW PASSWORD SCREEN (shown after clicking reset link in email) -->
+<div id="reset-screen" style="display:none;position:fixed;inset:0;background:var(--sidebar);align-items:center;justify-content:center;z-index:999;">
+  <div style="width:320px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <img src="assets/gorilla.png" alt="NLGA" style="width:42px;height:42px;filter:invert(1);display:block;margin:0 auto 12px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--purple);letter-spacing:5px;">KONG</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:600;">Set New Password</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:22px;">
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">New Password</label>
+        <input class="fi" id="new-password" type="password" placeholder="Enter new password" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Confirm Password</label>
+        <input class="fi" id="confirm-password" type="password" placeholder="Confirm new password" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div id="reset-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
+      <button class="btn btn-p" id="btn-set-password" style="width:100%;padding:9px 12px;font-size:12px;">Set New Password</button>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen" style="display:none;position:fixed;inset:0;background:var(--sidebar);align-items:center;justify-content:center;z-index:999;">
+  <div style="width:320px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <img src="assets/gorilla.png" alt="NLGA" style="width:42px;height:42px;filter:invert(1);display:block;margin:0 auto 12px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--purple);letter-spacing:5px;">KONG</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:600;">No Limits Grappling Academy</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:22px;">
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Email</label>
+        <input class="fi" id="login-email" type="email" placeholder="coach@email.com" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Password</label>
+        <input class="fi" id="login-password" type="password" placeholder="••••••••" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div id="login-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
+      <button class="btn btn-p" id="btn-login" style="width:100%;padding:9px 12px;font-size:12px;">Sign In</button>
+      <button class="btn btn-ghost" id="btn-reset-pw" style="width:100%;margin-top:7px;color:rgba(255,255,255,0.25);font-size:10px;border-color:transparent;">Forgot password?</button>
+    </div>
+  </div>
+</div>
+
+<div id="crm" style="display:none;">
+
+  <!-- SIDEBAR -->
+  <div class="sb">
+    <div class="sb-logo">
+      <img class="logo-img" src="assets/gorilla.png" alt="NLGA">
+      <div><div class="l1">KONG</div><div class="l2">kongcrm.com</div></div>
+    </div>
+    <div class="sb-nav">
+      <div class="nav-sec">Core</div>
+      <div class="ni on" data-page="dashboard">
+        <svg viewBox="0 0 14 14" fill="currentColor"><rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/><rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="ni" data-page="athletes">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="4.5" r="2.5"/><path d="M1.5 12c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/></svg>
+        Athletes
+      </div>
+      <div class="ni" data-page="attendance">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2.5" width="12" height="10" rx="1"/><path d="M4.5 1v3M9.5 1v3M1 6h12"/></svg>
+        Attendance
+      </div>
+      <div class="ni" data-page="ranks">
+        <svg viewBox="0 0 14 14" fill="currentColor"><path d="M7 1l1.5 3.5L12 5l-2.5 2.5.5 3.5L7 9.5 4 11l.5-3.5L2 5l3.5-.5z"/></svg>
+        Ranks
+      </div>
+      <div class="nav-sec">Competition</div>
+      <div class="ni" data-page="competition">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="5.5" r="3.5"/><path d="M4.5 9l-2.5 4h10l-2.5-4"/></svg>
+        Records
+      </div>
+      <div class="ni" data-page="events">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2.5" width="12" height="10" rx="1"/><path d="M4.5 1v3M9.5 1v3M1 6h12"/><circle cx="4.5" cy="9.5" r="1" fill="currentColor" stroke="none"/></svg>
+        Events
+      </div>
+      <div class="nav-sec">Future</div>
+      <div class="ni" data-page="merch">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3.5h2l1 7h6l1-7h2"/><circle cx="6" cy="12" r="1"/><circle cx="10" cy="12" r="1"/></svg>
+        Merch
+      </div>
+      <div class="ni" data-page="billing">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3.5" width="12" height="8" rx="1"/><path d="M1 6.5h12"/></svg>
+        Billing
+      </div>
+    </div>
+    <div class="sb-foot">
+      <div class="coach-pill">
+        <div class="cav">MM</div>
+        <div>
+          <div class="coach-name">Matt Marcinek</div>
+          <div class="coach-role">Head Coach</div>
+        </div>
+      </div>
+      <button class="btn btn-ghost" id="btn-logout" style="width:100%;margin-top:7px;color:rgba(255,255,255,0.25);font-size:10px;border-color:rgba(255,255,255,0.07);">Sign Out</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="pg-title" id="pg-title">Dashboard</div>
+      <div class="tb-r">
+        <button class="btn" id="btn-add-athlete">+ Add Athlete</button>
+        <button class="btn btn-p" id="btn-log-att">Log Attendance</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- DASHBOARD -->
+      <div id="p-dashboard" class="page on">
+        <div class="stats">
+          <div class="sc"><div class="sc-lbl">Active Athletes</div><div class="sc-val" id="s-active">0</div></div>
+          <div class="sc"><div class="sc-lbl">Sessions Logged</div><div class="sc-val" id="s-sessions">0</div></div>
+          <div class="sc"><div class="sc-lbl">Team Record</div><div class="sc-val" id="s-record">0-0</div></div>
+          <div class="sc"><div class="sc-lbl">Inactive</div><div class="sc-val warn" id="s-inactive">0</div></div>
+        </div>
+        <div class="g3">
+          <div class="card"><div class="card-t">Active Roster</div><div id="d-roster"></div></div>
+          <div class="card"><div class="card-t">Attendance — This Month</div><div id="d-att"></div></div>
+        </div>
+        <div class="g2">
+          <div class="card"><div class="card-t">Upcoming Events</div><div id="d-events"></div></div>
+          <div class="card"><div class="card-t">Win / Loss</div><div id="d-wl"></div></div>
+        </div>
+        <div class="card"><div class="card-t">Activity Log</div><div id="d-log"></div></div>
+      </div>
+
+      <!-- ATHLETES -->
+      <div id="p-athletes" class="page">
+        <div class="sh">
+          <div class="ftabs" id="ftabs"></div>
+          <input class="srch" placeholder="Search..." id="athlete-search">
+        </div>
+        <div class="tbl">
+          <div class="th-row at7">
+            <div class="th">Athlete</div><div class="th">Belt</div><div class="th">Status</div>
+            <div class="th">Contact</div><div class="th">Sessions</div><div class="th">Record</div><div class="th"></div>
+          </div>
+          <div id="a-list"></div>
+        </div>
+        <div id="inactive-sec" style="display:none;margin-top:16px">
+          <div class="inactive-sec-title">Inactive Athletes</div>
+          <div id="inactive-list"></div>
+        </div>
+      </div>
+
+      <!-- ATTENDANCE -->
+      <div id="p-attendance" class="page">
+        <div class="g2" style="margin-bottom:13px">
+          <div class="card"><div class="card-t">Session Log</div><div id="att-log"></div></div>
+          <div class="card">
+            <div class="card-t">Stats</div>
+            <div class="sc" style="margin-bottom:8px"><div class="sc-lbl">Total Sessions</div><div class="sc-val" id="att-total">0</div></div>
+            <div class="sc"><div class="sc-lbl">Top Attendee</div><div class="sc-val top-att" id="att-top">—</div></div>
+          </div>
+        </div>
+        <div class="card"><div class="card-t">Attendance by Athlete</div><div id="att-bars"></div></div>
+      </div>
+
+      <!-- RANKS -->
+      <div id="p-ranks" class="page">
+        <div class="g2">
+          <div class="card"><div class="card-t">Active Roster — Ranks</div><div id="rank-list"></div></div>
+          <div class="card"><div class="card-t">Belt Distribution</div><div id="belt-dist"></div></div>
+        </div>
+      </div>
+
+      <!-- COMPETITION -->
+      <div id="p-competition" class="page">
+        <div class="stats" style="margin-bottom:16px">
+          <div class="sc"><div class="sc-lbl">Wins</div><div class="sc-val green" id="c-wins">0</div></div>
+          <div class="sc"><div class="sc-lbl">Losses</div><div class="sc-val red" id="c-losses">0</div></div>
+          <div class="sc"><div class="sc-lbl">Gold Medals</div><div class="sc-val amber" id="c-gold">0</div></div>
+          <div class="sc"><div class="sc-lbl">Tournaments</div><div class="sc-val" id="c-events">0</div></div>
+        </div>
+        <div class="sh"><div></div><button class="btn btn-p btn-sm" id="btn-add-comp">+ Add Result</button></div>
+        <div class="tbl">
+          <div class="th-row ct6">
+            <div class="th">Event</div><div class="th">Athlete</div><div class="th">Division</div>
+            <div class="th">Date</div><div class="th">Result</div><div class="th">Place</div>
+          </div>
+          <div id="comp-list"></div>
+        </div>
+      </div>
+
+      <!-- EVENTS -->
+      <div id="p-events" class="page">
+        <div class="sh"><div></div><button class="btn btn-p btn-sm" id="btn-add-event">+ Add Event</button></div>
+        <div id="events-list"></div>
+      </div>
+
+      <!-- PROFILE -->
+      <div id="p-profile" class="page">
+        <div style="margin-bottom:12px">
+          <button class="btn btn-sm btn-ghost" id="btn-back-athletes">← Back to Athletes</button>
+        </div>
+        <div class="profile-wrap">
+          <div class="profile-lc">
+            <div class="profile-card">
+              <div class="p-banner"><div class="p-banner-bar"></div></div>
+              <div class="p-av-zone">
+                <div class="p-av-wrap">
+                  <div class="p-av" id="prof-av"></div>
+                  <label class="p-av-btn" for="prof-photo">
+                    <svg viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 2v6M2 5h6"/></svg>
+                  </label>
+                  <input type="file" id="prof-photo" accept="image/*">
+                </div>
+                <div id="prof-status-tag"></div>
+              </div>
+              <div class="p-info">
+                <div class="p-name" id="prof-name"></div>
+                <div class="p-tag" id="prof-tag"></div>
+                <div class="p-bg-tag" id="prof-bg"></div>
+                <div class="time-at-nlga" id="prof-time-nlga"></div>
+                <div id="prof-inactive-banner" style="display:none" class="inactive-banner">
+                  <div class="inactive-banner-text">
+                    <div class="inactive-reason" id="prof-inactive-reason"></div>
+                    <div class="inactive-notes" id="prof-inactive-notes"></div>
+                  </div>
+                  <button class="btn btn-sm btn-green" id="btn-reactivate-profile">Reactivate</button>
+                </div>
+                <div class="belt-block">
+                  <div class="belt-swatch" id="prof-swatch"></div>
+                  <div>
+                    <div class="belt-title" id="prof-belt-title"></div>
+                    <div class="belt-since" id="prof-since"></div>
+                  </div>
+                </div>
+                <div class="promo-panel">
+                  <div class="pp-lbl">Update Rank</div>
+                  <div class="belt-picker" id="prof-picker"></div>
+                  <button class="btn btn-sm btn-p" id="btn-promote" style="width:100%">Confirm Promotion</button>
+                </div>
+                <div class="sm-grid">
+                  <div class="sm"><div class="smv" id="prof-sess">0</div><div class="sml">Sessions</div></div>
+                  <div class="sm"><div class="smv green" id="prof-wins">0</div><div class="sml">Wins</div></div>
+                  <div class="sm"><div class="smv red" id="prof-losses">0</div><div class="sml">Losses</div></div>
+                  <div class="sm"><div class="smv amber" id="prof-medals">0</div><div class="sml">Medals</div></div>
+                </div>
+                <div class="contact-sec-t">Contact</div>
+                <div class="cl">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="12" height="9" rx="1"/><path d="M1 4l6 5 6-5"/></svg>
+                  <div class="cl-inner"><div class="cl-lbl">Email</div><div class="cl-val" id="prof-email"></div></div>
+                </div>
+                <div class="cl">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 1h3l1 3-2 1.5a9 9 0 004.5 4.5L11 8l3 1v3a1 1 0 01-1 1C6 13 1 8 1 2a1 1 0 011-1z"/></svg>
+                  <div class="cl-inner"><div class="cl-lbl">Phone</div><div class="cl-val" id="prof-phone"></div></div>
+                </div>
+                <div class="cl">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M7 1C4.8 1 3 2.8 3 5c0 3 4 8 4 8s4-5 4-8c0-2.2-1.8-4-4-4z"/><circle cx="7" cy="5" r="1.5"/></svg>
+                  <div class="cl-inner"><div class="cl-lbl">Address</div><div class="cl-val" id="prof-addr"></div></div>
+                </div>
+                <div class="contact-sec-t">Physical</div>
+                <div class="cl">
+                  <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="4" r="2.5"/><path d="M2 13c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>
+                  <div class="cl-inner"><div class="cl-lbl">Age · Weight · Class</div><div class="cl-val" id="prof-physical"></div></div>
+                </div>
+                <div style="margin-top:8px;display:flex;gap:6px">
+                  <button class="btn btn-sm" style="flex:1" id="btn-edit-contact">Edit Contact</button>
+                  <button class="btn btn-sm btn-red" id="btn-toggle-status"></button>
+                </div>
+              </div>
+            </div>
+            <div class="card"><div class="card-t">Rank History</div><div class="timeline" id="prof-timeline"></div></div>
+          </div>
+          <div class="profile-rc">
+            <div class="card">
+              <div class="card-t">Silverback System — Skill Assessment</div>
+              <div class="g2" id="prof-skills"></div>
+            </div>
+            <div class="card">
+              <div class="card-t">Attendance — Last 13 Weeks</div>
+              <div class="hm" id="prof-hm"></div>
+              <div class="hm-stat" id="prof-hm-stat"></div>
+            </div>
+            <div class="g2">
+              <div class="card">
+                <div class="card-t">Competition Results</div>
+                <div id="prof-comp"></div>
+              </div>
+              <div class="card">
+                <div class="card-t">Coach Notes <button class="btn btn-sm btn-p" id="btn-add-note" style="margin-left:auto">+ Add</button></div>
+                <div id="prof-notes"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="p-merch" class="page"><div class="cs"><div class="cs-icon">🦍</div><div class="cs-t">Merch Store — Coming Soon</div><div class="cs-s">Athletes purchase NLGA gear directly through the platform.</div></div></div>
+      <div id="p-billing" class="page"><div class="cs"><div class="cs-icon">💳</div><div class="cs-t">Billing — Coming Soon</div><div class="cs-s">Membership dues and payment history.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div id="add-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Add New Silverback</div>
+    <div class="modal-sec">Identity</div>
+    <div class="fr2"><div class="fg"><label class="fl">First Name</label><input class="fi" id="m-fname" placeholder="First"></div><div class="fg"><label class="fl">Last Name</label><input class="fi" id="m-lname" placeholder="Last"></div></div>
+    <div class="fr2"><div class="fg"><label class="fl">Belt</label><select class="fi" id="m-belt"><option value="white">White</option><option value="blue">Blue</option><option value="purple">Purple</option><option value="brown">Brown</option><option value="black">Black</option></select></div><div class="fg"><label class="fl">Background</label><input class="fi" id="m-bg" placeholder="e.g. Wrestler"></div></div>
+    <div class="modal-sec">Contact</div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="m-email" type="email" placeholder="athlete@email.com"></div>
+    <div class="fg"><label class="fl">Phone</label><input class="fi" id="m-phone" type="tel" placeholder="(570) 555-0000"></div>
+    <div class="fg"><label class="fl">Street Address</label><input class="fi" id="m-street" placeholder="123 Main St"></div>
+    <div class="fr2"><div class="fg"><label class="fl">City</label><input class="fi" id="m-city" placeholder="City"></div><div class="fg"><label class="fl">State · Zip</label><input class="fi" id="m-statzip" placeholder="PA 18501"></div></div>
+    <div class="modal-sec">Physical</div>
+    <div class="fr2"><div class="fg"><label class="fl">Age</label><input class="fi" id="m-age" placeholder="e.g. 22"></div><div class="fg"><label class="fl">Weight</label><input class="fi" id="m-weight" placeholder="e.g. 170 lbs"></div></div>
+    <div class="fg"><label class="fl">Competition Weight Class</label><input class="fi" id="m-wclass" placeholder="e.g. -77kg"></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="add-modal">Cancel</button><button class="btn btn-p" id="btn-save-athlete">Add to Roster</button></div>
+  </div>
+</div>
+
+<div id="edit-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Edit Contact Info</div>
+    <div class="modal-sec">Identity</div>
+    <div class="fr2"><div class="fg"><label class="fl">First Name</label><input class="fi" id="e-fname"></div><div class="fg"><label class="fl">Last Name</label><input class="fi" id="e-lname"></div></div>
+    <div class="fr2"><div class="fg"><label class="fl">Background</label><input class="fi" id="e-bg"></div><div class="fg"><label class="fl">Member Since</label><input class="fi" id="e-since"></div></div>
+    <div class="modal-sec">Contact</div>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="e-email" type="email"></div>
+    <div class="fg"><label class="fl">Phone</label><input class="fi" id="e-phone" type="tel"></div>
+    <div class="fg"><label class="fl">Street Address</label><input class="fi" id="e-street"></div>
+    <div class="fr2"><div class="fg"><label class="fl">City</label><input class="fi" id="e-city"></div><div class="fg"><label class="fl">State · Zip</label><input class="fi" id="e-statzip"></div></div>
+    <div class="modal-sec">Physical</div>
+    <div class="fr2"><div class="fg"><label class="fl">Age</label><input class="fi" id="e-age"></div><div class="fg"><label class="fl">Weight</label><input class="fi" id="e-weight"></div></div>
+    <div class="fg"><label class="fl">Competition Weight Class</label><input class="fi" id="e-wclass"></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="edit-modal">Cancel</button><button class="btn btn-p" id="btn-save-contact">Save Changes</button></div>
+  </div>
+</div>
+
+<div id="inactive-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t modal-t-red">Mark Inactive</div>
+    <div class="modal-sub" id="inactive-sub"></div>
+    <div class="fg"><label class="fl">Reason</label>
+      <select class="fi" id="inactive-reason">
+        <option>Injury</option><option>Moved away</option><option>Quit</option><option>School</option><option>Sports Season</option>
+      </select>
+    </div>
+    <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="inactive-notes" placeholder="Any additional context..."></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="inactive-modal">Cancel</button><button class="btn btn-red" id="btn-confirm-inactive">Mark Inactive</button></div>
+  </div>
+</div>
+
+<div id="reactivate-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t modal-t-green">Reactivate Athlete</div>
+    <div class="modal-sub" id="reactivate-sub"></div>
+    <div class="fg"><label class="fl">Return Notes (optional)</label><input class="fi" id="reactivate-notes" placeholder="e.g. Injury cleared, back to training..."></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="reactivate-modal">Cancel</button><button class="btn btn-green" id="btn-confirm-reactivate">Reactivate</button></div>
+  </div>
+</div>
+
+<div id="att-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Log Attendance</div>
+    <div class="fr2" style="margin-bottom:10px">
+      <div class="fg"><label class="fl">Date</label><input class="fi" type="date" id="att-date"></div>
+      <div class="fg"><label class="fl">Session Type</label><select class="fi" id="att-type"><option>Practice</option><option>Open Mat</option><option>Competition Prep</option><option>Fundamentals</option><option>Private</option></select></div>
+    </div>
+    <div class="fg"><label class="fl">Who showed up?</label><div id="att-checks" style="max-height:220px;overflow-y:auto"></div></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="att-modal">Cancel</button><button class="btn btn-p" id="btn-save-att">Save Session</button></div>
+  </div>
+</div>
+
+<div id="comp-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Add Competition Result</div>
+    <div class="fg"><label class="fl">Event Name</label><input class="fi" id="c-event" placeholder="e.g. Grappling Industries"></div>
+    <div class="fr2"><div class="fg"><label class="fl">Athlete</label><select class="fi" id="c-athlete"></select></div><div class="fg"><label class="fl">Date</label><input class="fi" id="c-date" type="date"></div></div>
+    <div class="fr2"><div class="fg"><label class="fl">Division</label><input class="fi" id="c-div" placeholder="e.g. Purple / -76kg"></div><div class="fg"><label class="fl">Place</label><select class="fi" id="c-place"><option value="1">1st — Gold</option><option value="2">2nd — Silver</option><option value="3">3rd — Bronze</option><option value="loss">Loss</option></select></div></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="comp-modal">Cancel</button><button class="btn btn-p" id="btn-save-comp">Save Result</button></div>
+  </div>
+</div>
+
+<div id="event-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Add Event</div>
+    <div class="fg"><label class="fl">Event Name</label><input class="fi" id="ev-name"></div>
+    <div class="fr2"><div class="fg"><label class="fl">Date</label><input class="fi" id="ev-date" type="date"></div><div class="fg"><label class="fl">Location</label><input class="fi" id="ev-loc" placeholder="City, State"></div></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="event-modal">Cancel</button><button class="btn btn-p" id="btn-save-event">Save Event</button></div>
+  </div>
+</div>
+
+<div id="note-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t">Coach Note</div>
+    <div class="fg"><label class="fl">Note</label><textarea class="fi" id="note-text" rows="4" placeholder="Technical observations, promotion readiness..." style="resize:none"></textarea></div>
+    <div class="ma"><button class="btn btn-ghost" data-close="note-modal">Cancel</button><button class="btn btn-p" id="btn-save-note">Save Note</button></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

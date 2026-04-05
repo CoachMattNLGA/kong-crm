@@ -1,0 +1,12 @@
+{
+  "name": "kong-crm",
+  "version": "1.0.0",
+  "description": "KONG CRM — No Limits Grappling Academy",
+  "scripts": {
+    "start": "http-server . -p 8080 -o --cors",
+    "dev": "http-server . -p 8080 -o --cors"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
