@@ -458,6 +458,10 @@ function renderProfile() {
   stBtn.textContent = a.status === 'active' ? 'Mark Inactive' : 'Reactivate';
   stBtn.className   = 'btn btn-sm ' + (a.status === 'active' ? 'btn-red' : 'btn-green');
 
+  // Promotion date — default to today
+  const promoDtEl = document.getElementById('promo-date');
+  if (promoDtEl && !promoDtEl.value) promoDtEl.value = todayISO();
+
   // Belt
   const b = BELTS[beltIdx(a.belt)];
   document.getElementById('prof-swatch').style.background    = b.color;
@@ -602,9 +606,19 @@ function promote() {
   if (!a) return;
   if (pendingBelt === beltIdx(a.belt)) { toast('Already at ' + BELTS[beltIdx(a.belt)].name + ' Belt.'); return; }
   const prev = BELTS[beltIdx(a.belt)].name;
+
+  // Use the date the coach entered, fall back to today
+  const promoDateEl = document.getElementById('promo-date');
+  const promoISO    = promoDateEl && promoDateEl.value ? promoDateEl.value : todayISO();
+  const promoParts  = promoISO.split('-');
+  const promoDisplay = promoParts.length === 3
+    ? new Date(+promoParts[0], +promoParts[1] - 1, +promoParts[2])
+        .toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : todayStr();
+
   a.belt = BELTS[pendingBelt].name.toLowerCase();
   if (!a.history) a.history = [];
-  a.history.unshift({ date: todayStr(), label: BELTS[pendingBelt].name + ' Belt' });
+  a.history.unshift({ date: promoDisplay, label: BELTS[pendingBelt].name + ' Belt' });
   addAct(`${a.first} ${a.last} promoted: ${prev} → ${BELTS[pendingBelt].name} Belt`);
   dbUpdateAthlete(a).catch(console.error);
   renderProfile();
