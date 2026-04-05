@@ -645,13 +645,14 @@ function openDeleteAthlete(id) {
 async function confirmDeleteAthlete() {
   const a = athletes.find(x => x.id === pendingInactiveId);
   if (!a) return;
+  const name = `${a.first} ${a.last}`;
   athletes = athletes.filter(x => x.id !== a.id);
   comps    = comps.filter(c => c.athleteId !== a.id);
+  curAthId = null;
   await dbDeleteAthlete(a.id);
   closeModal('delete-athlete-modal');
-  nav('athletes', document.querySelector('[data-page="athletes"]'));
-  renderAthletes();
-  toast(`${a.first} ${a.last} permanently deleted`);
+  nav('athletes', document.querySelectorAll('.ni')[1]);
+  toast(`${name} permanently deleted`);
 }
 
 function openReactivate(id) {
