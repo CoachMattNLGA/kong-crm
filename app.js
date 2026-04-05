@@ -751,6 +751,7 @@ function addAthlete() {
   dbInsertAthlete(newA).catch(console.error);
   closeModal('add-modal');
   renderDashboard();
+  renderAthletes();
   toast(f + ' ' + l + ' added to roster');
 }
 
