@@ -111,7 +111,7 @@ async function dbInsertAthlete(a) {
 }
 
 async function dbUpdateAthlete(a) {
-  const { error } = await db.from('athletes').update(athleteToRow(a)).eq('id', a.id);
+  const { error } = await db.from('athletes').upsert({ id: a.id, ...athleteToRow(a) });
   if (error) console.error('Update athlete:', error);
 }
 

@@ -722,7 +722,7 @@ function openAddModal() {
   openModal('add-modal');
 }
 
-function addAthlete() {
+async function addAthlete() {
   const f = document.getElementById('m-fname').value.trim();
   const l = document.getElementById('m-lname').value.trim();
   if (!f || !l) { toast('Enter first and last name.'); return; }
@@ -748,7 +748,7 @@ function addAthlete() {
   };
   athletes.push(newA);
   addAct(`${f} ${l} added to roster`);
-  dbInsertAthlete(newA).catch(console.error);
+  await dbInsertAthlete(newA);
   closeModal('add-modal');
   renderDashboard();
   renderAthletes();
