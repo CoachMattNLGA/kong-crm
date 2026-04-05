@@ -279,6 +279,7 @@
                 <div style="margin-top:8px;display:flex;gap:6px">
                   <button class="btn btn-sm" style="flex:1" id="btn-edit-contact">Edit Contact</button>
                   <button class="btn btn-sm btn-red" id="btn-toggle-status"></button>
+                  <button class="btn btn-sm btn-red" id="btn-delete-athlete" title="Permanently delete athlete">🗑</button>
                 </div>
               </div>
             </div>
@@ -362,6 +363,15 @@
     </div>
     <div class="fg"><label class="fl">Notes (optional)</label><input class="fi" id="inactive-notes" placeholder="Any additional context..."></div>
     <div class="ma"><button class="btn btn-ghost" data-close="inactive-modal">Cancel</button><button class="btn btn-red" id="btn-confirm-inactive">Mark Inactive</button></div>
+  </div>
+</div>
+
+<div id="delete-athlete-modal" class="modal-ov" style="display:none">
+  <div class="modal">
+    <div class="modal-t modal-t-red">Delete Athlete</div>
+    <div class="modal-sub" id="delete-athlete-sub"></div>
+    <p style="color:#ef4444;font-size:13px;margin:0 0 16px">This action is permanent and cannot be undone. All athlete data, competition results, and history will be deleted.</p>
+    <div class="ma"><button class="btn btn-ghost" data-close="delete-athlete-modal">Cancel</button><button class="btn btn-red" id="btn-confirm-delete-athlete">Delete Permanently</button></div>
   </div>
 </div>
 

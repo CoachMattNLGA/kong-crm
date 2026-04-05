@@ -635,6 +635,25 @@ function markInactive() {
   toast(`${a.first} ${a.last} moved to inactive`);
 }
 
+function openDeleteAthlete(id) {
+  pendingInactiveId = id; // reuse this variable for pending delete
+  const a = athletes.find(x => x.id === id);
+  document.getElementById('delete-athlete-sub').textContent = `You are about to permanently delete ${a.first} ${a.last}.`;
+  openModal('delete-athlete-modal');
+}
+
+async function confirmDeleteAthlete() {
+  const a = athletes.find(x => x.id === pendingInactiveId);
+  if (!a) return;
+  athletes = athletes.filter(x => x.id !== a.id);
+  comps    = comps.filter(c => c.athleteId !== a.id);
+  await dbDeleteAthlete(a.id);
+  closeModal('delete-athlete-modal');
+  nav('athletes', document.querySelector('[data-page="athletes"]'));
+  renderAthletes();
+  toast(`${a.first} ${a.last} permanently deleted`);
+}
+
 function openReactivate(id) {
   pendingReactivateId = id;
   const a = athletes.find(x => x.id === id);
@@ -940,8 +959,10 @@ document.addEventListener('click', function(e) {
   if (t.id === 'btn-save-note')          { saveNote(); return; }
   if (t.id === 'btn-save-contact')       { saveContact(); return; }
   if (t.id === 'btn-edit-contact')       { openEditContact(); return; }
-  if (t.id === 'btn-confirm-inactive')   { markInactive(); return; }
-  if (t.id === 'btn-confirm-reactivate') { reactivate(); return; }
+  if (t.id === 'btn-confirm-inactive')        { markInactive(); return; }
+  if (t.id === 'btn-confirm-reactivate')      { reactivate(); return; }
+  if (t.id === 'btn-delete-athlete')          { openDeleteAthlete(curAthId); return; }
+  if (t.id === 'btn-confirm-delete-athlete')  { confirmDeleteAthlete(); return; }
   if (t.id === 'btn-add-note')           { openModal('note-modal'); return; }
   if (t.id === 'btn-back-athletes')      { nav('athletes', document.querySelectorAll('.ni')[1]); return; }
 

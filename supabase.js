@@ -137,6 +137,12 @@ async function dbDeleteEvent(id) {
   if (error) console.error('Delete event:', error);
 }
 
+// ── DELETE ATHLETE ────────────────────────────────────────
+async function dbDeleteAthlete(id) {
+  const { error } = await db.from('athletes').delete().eq('id', id);
+  if (error) console.error('Delete athlete:', error);
+}
+
 // ── ATTENDANCE OPS ────────────────────────────────────────
 async function dbInsertAtt(s) {
   const { error } = await db.from('attendance_sessions').insert({
