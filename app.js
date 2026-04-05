@@ -1082,8 +1082,9 @@ document.getElementById('login-email').addEventListener('keydown', e => {
 (async function () {
   showLogin(); // default: show login while checking session
 
+  const isRecovery = window.location.hash.includes('type=recovery');
   const session = await getSession();
-  if (session) await initApp();
+  if (session && !isRecovery) await initApp();
 
   onAuthChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
