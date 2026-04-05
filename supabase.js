@@ -160,14 +160,20 @@ async function dbAddAct(text, time) {
 
 // ── PHOTO UPLOAD ──────────────────────────────────────────
 async function dbUploadPhoto(athleteId, file) {
-  const ext  = file.name.split('.').pop() || 'jpg';
+  const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
   const path = `${athleteId}.${ext}`;
+
+  // Remove existing file first to avoid upsert conflicts
+  await db.storage.from('athlete-photos').remove([path]);
+
   const { error } = await db.storage
     .from('athlete-photos')
-    .upload(path, file, { upsert: true, contentType: file.type });
+    .upload(path, file, { cacheControl: '3600', upsert: true });
   if (error) throw error;
+
   const { data } = db.storage.from('athlete-photos').getPublicUrl(path);
-  return data.publicUrl;
+  // Add cache-busting timestamp so browser loads the new image
+  return data.publicUrl + '?t=' + Date.now();
 }
 
 // ── AUTH ──────────────────────────────────────────────────
