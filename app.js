@@ -604,7 +604,7 @@ function renderNotes(a) {
 function promote() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  if (pendingBelt === beltIdx(a.belt)) { toast('Already at ' + BELTS[beltIdx(a.belt)].name + ' Belt.'); return; }
+  // Allow same belt selection to record a historical promotion date
   const prev = BELTS[beltIdx(a.belt)].name;
 
   // Use the date the coach entered, fall back to today
