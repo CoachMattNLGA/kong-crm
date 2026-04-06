@@ -51,6 +51,8 @@ create table if not exists competition_results (
   division     text default 'Open',
   result_date  text,
   place        text,
+  matches_won  integer default 0,
+  matches_lost integer default 0,
   created_at   timestamptz default now()
 );
 

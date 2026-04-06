@@ -168,8 +168,8 @@ function renderPage(p) {
 function renderDashboard() {
   const active   = athletes.filter(a => a.status === 'active');
   const inactive = athletes.filter(a => a.status === 'inactive');
-  const wins     = comps.filter(c => c.place !== 'loss').length;
-  const losses   = comps.filter(c => c.place === 'loss').length;
+  const wins     = comps.reduce((sum, c) => sum + (c.matchesWon  || 0), 0);
+  const losses   = comps.reduce((sum, c) => sum + (c.matchesLost || 0), 0);
 
   document.getElementById('s-active').textContent   = active.length;
   document.getElementById('s-sessions').textContent = attLog.length;
@@ -365,8 +365,8 @@ function renderRanks() {
 
 // ── COMPETITION ─────────────────────────────────────────
 function renderComp() {
-  const wins   = comps.filter(c => c.place !== 'loss').length;
-  const losses = comps.filter(c => c.place === 'loss').length;
+  const wins   = comps.reduce((sum, c) => sum + (c.matchesWon  || 0), 0);
+  const losses = comps.reduce((sum, c) => sum + (c.matchesLost || 0), 0);
   document.getElementById('c-wins').textContent   = wins;
   document.getElementById('c-losses').textContent = losses;
   document.getElementById('c-gold').textContent   = comps.filter(c => c.place === '1').length;
@@ -378,12 +378,15 @@ function renderComp() {
     const pMap     = { '1': ['rg','GOLD'], '2': ['rs','SILVER'], '3': ['rbrz','BRONZE'], 'loss': ['rl','LOSS'] };
     const [cls, lbl] = pMap[c.place] || ['rl','?'];
     const placeText  = { '1':'1st','2':'2nd','3':'3rd','loss':'Loss' }[c.place] || c.place;
+    const matchRec   = (c.matchesWon || c.matchesLost)
+      ? `<span style="font-size:11px;color:var(--text3)">${c.matchesWon}-${c.matchesLost}</span>`
+      : '';
     el.innerHTML += `<div class="td-row ct6">
       <div class="td" style="font-size:12px">${c.event}</div>
       <div class="td" style="font-size:12px">${a ? a.first + ' ' + a.last : '?'}</div>
       <div class="td tdm">${c.div}</div>
       <div class="td tdm">${fmtDate(c.date)}</div>
-      <div class="td"><span class="rb ${cls}">${lbl}</span></div>
+      <div class="td"><span class="rb ${cls}">${lbl}</span> ${matchRec}</div>
       <div class="td tdm">${placeText}</div>
     </div>`;
   });
@@ -553,6 +556,7 @@ function renderProfile() {
   myComps.slice().reverse().forEach(c => {
     const pMap        = { '1': ['cri-g','🥇','1st'], '2': ['cri-s','🥈','2nd'], '3': ['cri-s','🥉','3rd'], 'loss': ['cri-l','✕','Loss'] };
     const [cls, ico, lbl] = pMap[c.place] || ['cri-l','?','?'];
+    const matchRec    = (c.matchesWon || c.matchesLost) ? `${c.matchesWon}-${c.matchesLost}` : '';
     cpEl.innerHTML += `<div class="cr">
       <div class="cri ${cls}">${ico}</div>
       <div style="flex:1">
@@ -561,6 +565,7 @@ function renderProfile() {
       </div>
       <div style="text-align:right">
         <div style="font-family:'Bebas Neue',sans-serif;font-size:14px">${lbl}</div>
+        ${matchRec ? `<div style="font-size:11px;font-weight:600;color:var(--text2)">${matchRec}</div>` : ''}
         <div style="font-size:10px;color:var(--text3)">${fmtDate(c.date)}</div>
       </div>
     </div>`;
@@ -804,9 +809,11 @@ function logAttendance() {
 
 // ── COMPETITION MODAL ──────────────────────────────────
 function openCompModal() {
-  document.getElementById('c-date').value  = todayISO();
-  document.getElementById('c-event').value = '';
-  document.getElementById('c-div').value   = '';
+  document.getElementById('c-date').value         = todayISO();
+  document.getElementById('c-event').value        = '';
+  document.getElementById('c-div').value          = '';
+  document.getElementById('c-matches-won').value  = '';
+  document.getElementById('c-matches-lost').value = '';
   const sel = document.getElementById('c-athlete'); sel.innerHTML = '';
   athletes.forEach(a => { sel.innerHTML += `<option value="${a.id}">${a.first} ${a.last}</option>`; });
   openModal('comp-modal');
@@ -815,19 +822,23 @@ function openCompModal() {
 function addComp() {
   const event = document.getElementById('c-event').value.trim();
   if (!event) { toast('Enter event name.'); return; }
-  const athleteId = document.getElementById('c-athlete').value;
-  const date      = document.getElementById('c-date').value;
-  const div       = document.getElementById('c-div').value || 'Open';
-  const place     = document.getElementById('c-place').value;
-  const newComp   = { id: newUUID(), event, athleteId, div, date, place };
+  const athleteId  = document.getElementById('c-athlete').value;
+  const date       = document.getElementById('c-date').value;
+  const div        = document.getElementById('c-div').value || 'Open';
+  const place      = document.getElementById('c-place').value;
+  const matchesWon  = parseInt(document.getElementById('c-matches-won').value,  10) || 0;
+  const matchesLost = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
+  const newComp    = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
   comps.push(newComp);
   const a = athletes.find(x => x.id === athleteId);
   if (a) {
-    if (place === 'loss') a.losses++; else a.wins++;
+    a.wins   += matchesWon;
+    a.losses += matchesLost;
     dbUpdateAthlete(a).catch(console.error);
   }
-  const placeText = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
-  addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}`);
+  const placeText  = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
+  const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
+  addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
   dbInsertComp(newComp).catch(console.error);
   closeModal('comp-modal');
   renderComp();

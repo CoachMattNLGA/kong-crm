@@ -40,12 +40,14 @@ function mapAthlete(r) {
 
 function mapComp(r) {
   return {
-    id:        r.id,
-    event:     r.event_name,
-    athleteId: r.athlete_id,
-    div:       r.division,
-    date:      r.result_date,
-    place:     r.place,
+    id:          r.id,
+    event:       r.event_name,
+    athleteId:   r.athlete_id,
+    div:         r.division,
+    date:        r.result_date,
+    place:       r.place,
+    matchesWon:  r.matches_won  || 0,
+    matchesLost: r.matches_lost || 0,
   };
 }
 
@@ -120,6 +122,7 @@ async function dbInsertComp(c) {
   const { error } = await db.from('competition_results').insert({
     id: c.id, event_name: c.event, athlete_id: c.athleteId,
     division: c.div, result_date: c.date, place: c.place,
+    matches_won: c.matchesWon || 0, matches_lost: c.matchesLost || 0,
   });
   if (error) console.error('Insert comp:', error);
 }
