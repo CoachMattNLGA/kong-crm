@@ -709,16 +709,20 @@ function openEditContact() {
     const el = document.getElementById('e-' + f);
     if (el) el.value = a[keys[i]] || '';
   });
+  const isoEl = document.getElementById('e-since-iso');
+  if (isoEl) isoEl.value = a.sinceISO || '';
   openModal('edit-modal');
 }
 
 function saveContact() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  a.first   = document.getElementById('e-fname').value.trim();
-  a.last    = document.getElementById('e-lname').value.trim();
-  a.bg      = document.getElementById('e-bg').value.trim();
-  a.since   = document.getElementById('e-since').value.trim();
+  a.first    = document.getElementById('e-fname').value.trim();
+  a.last     = document.getElementById('e-lname').value.trim();
+  a.bg       = document.getElementById('e-bg').value.trim();
+  a.since    = document.getElementById('e-since').value.trim();
+  const newISO = document.getElementById('e-since-iso').value;
+  if (newISO) a.sinceISO = newISO;
   a.email   = document.getElementById('e-email').value.trim();
   a.phone   = document.getElementById('e-phone').value.trim();
   a.street  = document.getElementById('e-street').value.trim();
@@ -736,7 +740,7 @@ function saveContact() {
 
 // ── ADD ATHLETE ────────────────────────────────────────
 function openAddModal() {
-  const ids = ['m-fname','m-lname','m-bg','m-email','m-phone','m-street','m-city','m-statzip','m-age','m-weight','m-wclass'];
+  const ids = ['m-fname','m-lname','m-bg','m-email','m-phone','m-street','m-city','m-statzip','m-age','m-weight','m-wclass','m-since-iso'];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   openModal('add-modal');
 }
@@ -758,7 +762,11 @@ async function addAthlete() {
     age:     document.getElementById('m-age').value.trim(),
     weight:  document.getElementById('m-weight').value.trim(),
     wclass:  document.getElementById('m-wclass').value.trim(),
-    since:   todayStr(), sinceISO: todayISO(),
+    since:    (document.getElementById('m-since-iso').value
+                ? new Date(document.getElementById('m-since-iso').value + 'T00:00:00')
+                    .toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                : todayStr()),
+    sinceISO: document.getElementById('m-since-iso').value || todayISO(),
     photo: '', sessions: 0, wins: 0, losses: 0,
     status: 'active', inactiveReason: '', inactiveNotes: '', inactiveSince: '',
     history: [{ date: todayStr(), label: BELTS[beltIdx(belt)].name + ' Belt' }],
