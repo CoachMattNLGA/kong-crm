@@ -125,6 +125,7 @@ async function dbInsertComp(c) {
     matches_won: c.matchesWon || 0, matches_lost: c.matchesLost || 0,
   });
   if (error) console.error('Insert comp:', error);
+  return { error };
 }
 
 // ── EVENT OPS ─────────────────────────────────────────────

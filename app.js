@@ -720,9 +720,14 @@ function saveContact() {
   a.first    = document.getElementById('e-fname').value.trim();
   a.last     = document.getElementById('e-lname').value.trim();
   a.bg       = document.getElementById('e-bg').value.trim();
-  a.since    = document.getElementById('e-since').value.trim();
+  const sinceDisplay = document.getElementById('e-since').value.trim();
   const newISO = document.getElementById('e-since-iso').value;
-  if (newISO) a.sinceISO = newISO;
+  if (newISO) {
+    a.sinceISO = newISO;
+    a.since = new Date(newISO + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+  } else {
+    a.since = sinceDisplay;
+  }
   a.email   = document.getElementById('e-email').value.trim();
   a.phone   = document.getElementById('e-phone').value.trim();
   a.street  = document.getElementById('e-street').value.trim();
@@ -827,7 +832,7 @@ function openCompModal() {
   openModal('comp-modal');
 }
 
-function addComp() {
+async function addComp() {
   const event = document.getElementById('c-event').value.trim();
   if (!event) { toast('Enter event name.'); return; }
   const athleteId  = document.getElementById('c-athlete').value;
@@ -837,6 +842,11 @@ function addComp() {
   const matchesWon  = parseInt(document.getElementById('c-matches-won').value,  10) || 0;
   const matchesLost = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
   const newComp    = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
+  const { error } = await dbInsertComp(newComp);
+  if (error) {
+    toast('Could not save result. Please try again.');
+    return;
+  }
   comps.push(newComp);
   const a = athletes.find(x => x.id === athleteId);
   if (a) {
@@ -847,7 +857,6 @@ function addComp() {
   const placeText  = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
   const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
   addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
-  dbInsertComp(newComp).catch(console.error);
   closeModal('comp-modal');
   renderComp();
   toast('Result saved');
