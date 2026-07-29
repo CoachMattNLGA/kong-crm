@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>KONG CRM — No Limits Grappling Academy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,7 +16,7 @@
     <div style="text-align:center;margin-bottom:28px;">
       <img src="assets/gorilla.jpg" alt="NLGA" style="width:42px;height:42px;filter:invert(1);display:block;margin:0 auto 12px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--purple);letter-spacing:5px;">KONG</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:600;">Set New Password</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Inter',sans-serif;font-weight:600;">Set New Password</div>
     </div>
     <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:22px;">
       <div class="fg">
@@ -27,7 +27,7 @@
         <label class="fl" style="color:rgba(255,255,255,0.35);">Confirm Password</label>
         <input class="fi" id="confirm-password" type="password" placeholder="Confirm new password" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
       </div>
-      <div id="reset-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
+      <div id="reset-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
       <button class="btn btn-p" id="btn-set-password" style="width:100%;padding:9px 12px;font-size:12px;">Set New Password</button>
     </div>
   </div>
@@ -39,7 +39,7 @@
     <div style="text-align:center;margin-bottom:28px;">
       <img src="assets/gorilla.jpg" alt="NLGA" style="width:42px;height:42px;filter:invert(1);display:block;margin:0 auto 12px;">
       <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--purple);letter-spacing:5px;">KONG</div>
-      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Barlow Condensed',sans-serif;font-weight:600;">No Limits Grappling Academy</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;font-family:'Inter',sans-serif;font-weight:600;">No Limits Grappling Academy</div>
     </div>
     <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:22px;">
       <div class="fg">
@@ -50,7 +50,7 @@
         <label class="fl" style="color:rgba(255,255,255,0.35);">Password</label>
         <input class="fi" id="login-password" type="password" placeholder="••••••••" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
       </div>
-      <div id="login-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Barlow Condensed',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
+      <div id="login-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
       <button class="btn btn-p" id="btn-login" style="width:100%;padding:9px 12px;font-size:12px;">Sign In</button>
       <button class="btn btn-ghost" id="btn-reset-pw" style="width:100%;margin-top:7px;color:rgba(255,255,255,0.25);font-size:10px;border-color:transparent;">Forgot password?</button>
     </div>
@@ -64,6 +64,9 @@
     <div class="sb-logo">
       <img class="logo-img" src="assets/gorilla.jpg" alt="NLGA">
       <div><div class="l1">KONG</div><div class="l2">kongcrm.com</div></div>
+    </div>
+    <div class="sb-status-pill">
+      <span class="pill-dot"></span> kongbynlga.com <span class="pill-live">LIVE</span>
     </div>
     <div class="sb-nav">
       <div class="nav-sec">Core</div>
@@ -107,8 +110,9 @@
         <div class="cav">MM</div>
         <div>
           <div class="coach-name">Matt Marcinek</div>
-          <div class="coach-role">Head Coach</div>
+          <div class="coach-role">Head Coach · Brown Belt</div>
         </div>
+        <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.5" style="width:14px;height:14px;color:rgba(255,255,255,0.15);margin-left:auto"><path d="M4 3l4 3-4 3"/></svg>
       </div>
       <button class="btn btn-ghost" id="btn-logout" style="width:100%;margin-top:7px;color:rgba(255,255,255,0.25);font-size:10px;border-color:rgba(255,255,255,0.07);">Sign Out</button>
     </div>
@@ -129,8 +133,8 @@
       <!-- DASHBOARD -->
       <div id="p-dashboard" class="page on">
         <div class="stats">
-          <div class="sc"><div class="sc-lbl">Active Athletes</div><div class="sc-val" id="s-active">0</div></div>
-          <div class="sc"><div class="sc-lbl">Sessions Logged</div><div class="sc-val" id="s-sessions">0</div></div>
+          <div class="sc sc-hero"><div class="sc-lbl">Active Athletes</div><div class="sc-val" id="s-active">0</div></div>
+          <div class="sc sc-sessions"><div class="sc-lbl">Sessions Logged</div><div class="sc-val" id="s-sessions">0</div></div>
           <div class="sc"><div class="sc-lbl">Team Record</div><div class="sc-val" id="s-record">0-0</div></div>
           <div class="sc"><div class="sc-lbl">Inactive</div><div class="sc-val warn" id="s-inactive">0</div></div>
         </div>

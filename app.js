@@ -122,6 +122,28 @@ function toast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
+/**
+ * OPTIMISTIC UI HELPER
+ * Runs an optimistic local mutation immediately, re-renders, then syncs
+ * to Supabase in the background. On failure, rolls back using the
+ * provided rollback function and shows an error toast.
+ *
+ * @param {Function} applyLocal   - mutates local state + calls render fns. Runs synchronously, first.
+ * @param {Function} syncRemote   - async fn that performs the Supabase call. Must throw/reject on failure.
+ * @param {Function} rollback     - undoes applyLocal's mutation + re-renders. Runs only on syncRemote failure.
+ * @param {string}   errorMsg     - shown in the toast on failure.
+ */
+async function optimistic(applyLocal, syncRemote, rollback, errorMsg) {
+  applyLocal();
+  try {
+    await syncRemote();
+  } catch (err) {
+    console.error(errorMsg, err);
+    rollback();
+    toast('⚠ ' + errorMsg);
+  }
+}
+
 // ── AVATAR HTML ────────────────────────────────────────
 function avHTML(a, size = 30, fs = 12) {
   const i  = athletes.indexOf(a);
@@ -609,25 +631,34 @@ function renderNotes(a) {
 function promote() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  // Allow same belt selection to record a historical promotion date
-  const prev = BELTS[beltIdx(a.belt)].name;
+  const prevBelt    = a.belt;
+  const prevHistory = a.history ? [...a.history] : [];
+  const prevName    = BELTS[beltIdx(prevBelt)].name;
 
-  // Use the date the coach entered, fall back to today
-  const promoDateEl = document.getElementById('promo-date');
-  const promoISO    = promoDateEl && promoDateEl.value ? promoDateEl.value : todayISO();
-  const promoParts  = promoISO.split('-');
+  const promoDateEl  = document.getElementById('promo-date');
+  const promoISO     = promoDateEl && promoDateEl.value ? promoDateEl.value : todayISO();
+  const promoParts   = promoISO.split('-');
   const promoDisplay = promoParts.length === 3
-    ? new Date(+promoParts[0], +promoParts[1] - 1, +promoParts[2])
-        .toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    ? new Date(+promoParts[0], +promoParts[1] - 1, +promoParts[2]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : todayStr();
+  const newBeltName  = BELTS[pendingBelt].name;
 
-  a.belt = BELTS[pendingBelt].name.toLowerCase();
-  if (!a.history) a.history = [];
-  a.history.unshift({ date: promoDisplay, label: BELTS[pendingBelt].name + ' Belt' });
-  addAct(`${a.first} ${a.last} promoted: ${prev} → ${BELTS[pendingBelt].name} Belt`);
-  dbUpdateAthlete(a).catch(console.error);
-  renderProfile();
-  toast('🎉 ' + prev + ' → ' + BELTS[pendingBelt].name + ' Belt');
+  optimistic(
+    () => {
+      a.belt = newBeltName.toLowerCase();
+      a.history = [{ date: promoDisplay, label: newBeltName + ' Belt' }, ...prevHistory];
+      addAct(`${a.first} ${a.last} promoted: ${prevName} → ${newBeltName} Belt`);
+      renderProfile();
+      toast('🎉 ' + prevName + ' → ' + newBeltName + ' Belt');
+    },
+    () => dbUpdateAthlete(a),
+    () => {
+      a.belt = prevBelt;
+      a.history = prevHistory;
+      renderProfile();
+    },
+    `Could not save promotion for ${a.first} ${a.last} — please try again.`
+  );
 }
 
 // ── STATUS ─────────────────────────────────────────────
@@ -642,16 +673,31 @@ function openMarkInactive(id) {
 function markInactive() {
   const a = athletes.find(x => x.id === pendingInactiveId);
   if (!a) return;
-  a.status        = 'inactive';
-  a.inactiveReason = document.getElementById('inactive-reason').value;
-  a.inactiveNotes  = document.getElementById('inactive-notes').value.trim();
-  a.inactiveSince  = todayStr();
-  addAct(`${a.first} ${a.last} marked inactive — ${a.inactiveReason}`);
-  dbUpdateAthlete(a).catch(console.error);
+  const prior = { status: a.status, inactiveReason: a.inactiveReason, inactiveNotes: a.inactiveNotes, inactiveSince: a.inactiveSince };
+  const reason = document.getElementById('inactive-reason').value;
+  const notes  = document.getElementById('inactive-notes').value.trim();
+
   closeModal('inactive-modal');
-  if (curAthId === a.id) renderProfile();
-  renderAthletes();
-  toast(`${a.first} ${a.last} moved to inactive`);
+
+  optimistic(
+    () => {
+      a.status = 'inactive';
+      a.inactiveReason = reason;
+      a.inactiveNotes  = notes;
+      a.inactiveSince  = todayStr();
+      addAct(`${a.first} ${a.last} marked inactive — ${reason}`);
+      if (curAthId === a.id) renderProfile();
+      renderAthletes();
+      toast(`${a.first} ${a.last} moved to inactive`);
+    },
+    () => dbUpdateAthlete(a),
+    () => {
+      Object.assign(a, prior);
+      if (curAthId === a.id) renderProfile();
+      renderAthletes();
+    },
+    `Could not update status for ${a.first} ${a.last} — please try again.`
+  );
 }
 
 function openDeleteAthlete(id) {
@@ -665,13 +711,22 @@ async function confirmDeleteAthlete() {
   const a = athletes.find(x => x.id === pendingInactiveId);
   if (!a) return;
   const name = `${a.first} ${a.last}`;
-  athletes = athletes.filter(x => x.id !== a.id);
-  comps    = comps.filter(c => c.athleteId !== a.id);
-  curAthId = null;
-  await dbDeleteAthlete(a.id);
-  closeModal('delete-athlete-modal');
-  nav('athletes', document.querySelectorAll('.ni')[1]);
-  toast(`${name} permanently deleted`);
+  const btn = document.getElementById('btn-confirm-delete-athlete');
+  btn.disabled = true; btn.textContent = 'Deleting…';
+  try {
+    await dbDeleteAthlete(a.id);
+    athletes = athletes.filter(x => x.id !== a.id);
+    comps    = comps.filter(c => c.athleteId !== a.id);
+    curAthId = null;
+    closeModal('delete-athlete-modal');
+    nav('athletes', document.querySelectorAll('.ni')[1]);
+    toast(`${name} permanently deleted`);
+  } catch (err) {
+    console.error('Delete athlete failed:', err);
+    toast(`⚠ Could not delete ${name} — please try again.`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'Delete Permanently';
+  }
 }
 
 function openReactivate(id) {
@@ -685,18 +740,30 @@ function openReactivate(id) {
 function reactivate() {
   const a = athletes.find(x => x.id === pendingReactivateId);
   if (!a) return;
-  const prevReason = a.inactiveReason;
-  const notes      = document.getElementById('reactivate-notes').value.trim();
-  a.status         = 'active';
-  a.inactiveReason = '';
-  a.inactiveNotes  = notes ? 'Returned: ' + notes : '';
-  a.inactiveSince  = '';
-  addAct(`${a.first} ${a.last} reactivated — was: ${prevReason}`);
-  dbUpdateAthlete(a).catch(console.error);
+  const prior = { status: a.status, inactiveReason: a.inactiveReason, inactiveNotes: a.inactiveNotes, inactiveSince: a.inactiveSince };
+  const notes = document.getElementById('reactivate-notes').value.trim();
+
   closeModal('reactivate-modal');
-  if (curAthId === a.id) renderProfile();
-  renderAthletes();
-  toast(`${a.first} ${a.last} is back on the active roster`);
+
+  optimistic(
+    () => {
+      a.status = 'active';
+      a.inactiveReason = '';
+      a.inactiveNotes = notes ? 'Returned: ' + notes : '';
+      a.inactiveSince = '';
+      addAct(`${a.first} ${a.last} reactivated — was: ${prior.inactiveReason}`);
+      if (curAthId === a.id) renderProfile();
+      renderAthletes();
+      toast(`${a.first} ${a.last} is back on the active roster`);
+    },
+    () => dbUpdateAthlete(a),
+    () => {
+      Object.assign(a, prior);
+      if (curAthId === a.id) renderProfile();
+      renderAthletes();
+    },
+    `Could not reactivate ${a.first} ${a.last} — please try again.`
+  );
 }
 
 // ── CONTACT EDIT ───────────────────────────────────────
@@ -717,30 +784,47 @@ function openEditContact() {
 function saveContact() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  a.first    = document.getElementById('e-fname').value.trim();
-  a.last     = document.getElementById('e-lname').value.trim();
-  a.bg       = document.getElementById('e-bg').value.trim();
+  const fields = ['first','last','bg','since','sinceISO','email','phone','street','city','statzip','age','weight','wclass'];
+  const prior = Object.fromEntries(fields.map(k => [k, a[k]]));
+
   const sinceDisplay = document.getElementById('e-since').value.trim();
   const newISO = document.getElementById('e-since-iso').value;
+  const next = {
+    first: document.getElementById('e-fname').value.trim(),
+    last: document.getElementById('e-lname').value.trim(),
+    bg: document.getElementById('e-bg').value.trim(),
+    email: document.getElementById('e-email').value.trim(),
+    phone: document.getElementById('e-phone').value.trim(),
+    street: document.getElementById('e-street').value.trim(),
+    city: document.getElementById('e-city').value.trim(),
+    statzip: document.getElementById('e-statzip').value.trim(),
+    age: document.getElementById('e-age').value.trim(),
+    weight: document.getElementById('e-weight').value.trim(),
+    wclass: document.getElementById('e-wclass').value.trim(),
+  };
   if (newISO) {
-    a.sinceISO = newISO;
-    a.since = new Date(newISO + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    next.sinceISO = newISO;
+    next.since = new Date(newISO + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
   } else {
-    a.since = sinceDisplay;
+    next.since = sinceDisplay;
   }
-  a.email   = document.getElementById('e-email').value.trim();
-  a.phone   = document.getElementById('e-phone').value.trim();
-  a.street  = document.getElementById('e-street').value.trim();
-  a.city    = document.getElementById('e-city').value.trim();
-  a.statzip = document.getElementById('e-statzip').value.trim();
-  a.age     = document.getElementById('e-age').value.trim();
-  a.weight  = document.getElementById('e-weight').value.trim();
-  a.wclass  = document.getElementById('e-wclass').value.trim();
-  addAct(`${a.first} ${a.last} contact info updated`);
-  dbUpdateAthlete(a).catch(console.error);
+
   closeModal('edit-modal');
-  renderProfile();
-  toast('Contact info saved');
+
+  optimistic(
+    () => {
+      Object.assign(a, next);
+      addAct(`${a.first} ${a.last} contact info updated`);
+      renderProfile();
+      toast('Contact info saved');
+    },
+    () => dbUpdateAthlete(a),
+    () => {
+      Object.assign(a, prior);
+      renderProfile();
+    },
+    'Could not save contact info — please try again.'
+  );
 }
 
 // ── ADD ATHLETE ────────────────────────────────────────
@@ -778,13 +862,25 @@ async function addAthlete() {
     notes: [],
     skills: [65, 65, 65, 65, 65, 65, 65, 65],
   };
-  athletes.push(newA);
-  addAct(`${f} ${l} added to roster`);
-  await dbInsertAthlete(newA);
-  closeModal('add-modal');
-  renderDashboard();
-  renderAthletes();
-  toast(f + ' ' + l + ' added to roster');
+
+  closeModal('add-modal'); // close immediately, don't wait on network
+
+  await optimistic(
+    () => {
+      athletes.push(newA);
+      addAct(`${f} ${l} added to roster`);
+      renderDashboard();
+      renderAthletes();
+      toast(f + ' ' + l + ' added to roster');
+    },
+    () => dbInsertAthlete(newA),
+    () => {
+      athletes = athletes.filter(a => a.id !== newA.id);
+      renderDashboard();
+      renderAthletes();
+    },
+    `Could not save ${f} ${l} — please try again.`
+  );
 }
 
 // ── ATTENDANCE MODAL ───────────────────────────────────
@@ -802,22 +898,40 @@ function openAttModal() {
   openModal('att-modal');
 }
 
-function logAttendance() {
+async function logAttendance() {
   const date    = document.getElementById('att-date').value;
   const type    = document.getElementById('att-type').value;
   const checked = [...document.querySelectorAll('#att-checks input:checked')].map(i => i.value);
   if (!checked.length) { toast('Select at least one athlete.'); return; }
+
   const session = { id: newUUID(), date: fmtShort(date), rawDate: date, type, athletes: checked };
-  attLog.push(session);
-  checked.forEach(id => {
-    const a = athletes.find(x => x.id === id);
-    if (a) { a.sessions++; dbUpdateAthlete(a).catch(console.error); }
-  });
-  addAct(`${type} logged — ${checked.length} athletes (${fmtShort(date)})`);
-  dbInsertAtt(session).catch(console.error);
+  const touched = checked
+    .map(id => athletes.find(x => x.id === id))
+    .filter(Boolean);
+  const priorSessions = new Map(touched.map(a => [a.id, a.sessions]));
+
   closeModal('att-modal');
-  renderDashboard();
-  toast('Session logged — ' + checked.length + ' athletes');
+
+  await optimistic(
+    () => {
+      attLog.push(session);
+      touched.forEach(a => a.sessions++);
+      addAct(`${type} logged — ${checked.length} athletes (${fmtShort(date)})`);
+      renderDashboard();
+      toast('Session logged — ' + checked.length + ' athletes');
+    },
+    async () => {
+      await dbInsertAtt(session);
+      await Promise.all(touched.map(a => dbUpdateAthlete(a)));
+    },
+    () => {
+      attLog = attLog.filter(s => s.id !== session.id);
+      touched.forEach(a => { a.sessions = priorSessions.get(a.id); });
+      renderDashboard();
+      if (document.getElementById('p-attendance').classList.contains('on')) renderAttendance();
+    },
+    'Could not save attendance session — please try again.'
+  );
 }
 
 // ── COMPETITION MODAL ──────────────────────────────────
@@ -835,31 +949,40 @@ function openCompModal() {
 async function addComp() {
   const event = document.getElementById('c-event').value.trim();
   if (!event) { toast('Enter event name.'); return; }
-  const athleteId  = document.getElementById('c-athlete').value;
-  const date       = document.getElementById('c-date').value;
-  const div        = document.getElementById('c-div').value || 'Open';
-  const place      = document.getElementById('c-place').value;
-  const matchesWon  = parseInt(document.getElementById('c-matches-won').value,  10) || 0;
-  const matchesLost = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
-  const newComp    = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
-  const { error } = await dbInsertComp(newComp);
-  if (error) {
-    toast('Could not save result. Please try again.');
-    return;
-  }
-  comps.push(newComp);
-  const a = athletes.find(x => x.id === athleteId);
-  if (a) {
-    a.wins   += matchesWon;
-    a.losses += matchesLost;
-    dbUpdateAthlete(a).catch(console.error);
-  }
-  const placeText  = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
-  const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
-  addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
+  const athleteId    = document.getElementById('c-athlete').value;
+  const date         = document.getElementById('c-date').value;
+  const div          = document.getElementById('c-div').value || 'Open';
+  const place        = document.getElementById('c-place').value;
+  const matchesWon   = parseInt(document.getElementById('c-matches-won').value,  10) || 0;
+  const matchesLost  = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
+  const newComp      = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
+  const a            = athletes.find(x => x.id === athleteId);
+  const priorWins    = a ? a.wins   : null;
+  const priorLosses  = a ? a.losses : null;
+
   closeModal('comp-modal');
-  renderComp();
-  toast('Result saved');
+
+  await optimistic(
+    () => {
+      comps.push(newComp);
+      if (a) { a.wins += matchesWon; a.losses += matchesLost; }
+      const placeText  = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
+      const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
+      addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
+      renderComp();
+      toast('Result saved');
+    },
+    async () => {
+      await dbInsertComp(newComp);
+      if (a) await dbUpdateAthlete(a);
+    },
+    () => {
+      comps = comps.filter(c => c.id !== newComp.id);
+      if (a) { a.wins = priorWins; a.losses = priorLosses; }
+      renderComp();
+    },
+    'Could not save competition result — please try again.'
+  );
 }
 
 // ── EVENT MODAL ────────────────────────────────────────
@@ -870,18 +993,29 @@ function openEventModal() {
   openModal('event-modal');
 }
 
-function addEvent() {
-  const name  = document.getElementById('ev-name').value.trim();
-  const date  = document.getElementById('ev-date').value;
-  const loc   = document.getElementById('ev-loc').value.trim() || 'TBD';
+async function addEvent() {
+  const name = document.getElementById('ev-name').value.trim();
+  const date = document.getElementById('ev-date').value;
+  const loc  = document.getElementById('ev-loc').value.trim() || 'TBD';
   if (!name || !date) { toast('Enter name and date.'); return; }
   const newEv = { id: newUUID(), name, date, loc };
-  events.push(newEv);
-  addAct(`Event added: ${name}`);
-  dbInsertEvent(newEv).catch(console.error);
+
   closeModal('event-modal');
-  renderEvents();
-  toast('Event added');
+
+  await optimistic(
+    () => {
+      events.push(newEv);
+      addAct(`Event added: ${name}`);
+      renderEvents();
+      toast('Event added');
+    },
+    () => dbInsertEvent(newEv),
+    () => {
+      events = events.filter(ev => ev.id !== newEv.id);
+      renderEvents();
+    },
+    `Could not save event "${name}" — please try again.`
+  );
 }
 
 // ── NOTE MODAL ─────────────────────────────────────────
@@ -891,13 +1025,25 @@ function saveNote() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
   if (!a.notes) a.notes = [];
-  a.notes.push({ id: nowId(), date: todayStr(), text, editing: false });
-  addAct(`Coach note added for ${a.first} ${a.last}`);
-  dbUpdateAthlete(a).catch(console.error);
+  const note = { id: nowId(), date: todayStr(), text, editing: false };
+
   document.getElementById('note-text').value = '';
   closeModal('note-modal');
-  renderNotes(a);
-  toast('Note saved');
+
+  optimistic(
+    () => {
+      a.notes.push(note);
+      addAct(`Coach note added for ${a.first} ${a.last}`);
+      renderNotes(a);
+      toast('Note saved');
+    },
+    () => dbUpdateAthlete(a),
+    () => {
+      a.notes = a.notes.filter(n => n.id !== note.id);
+      renderNotes(a);
+    },
+    'Could not save note — please try again.'
+  );
 }
 
 // ── EVENT DELEGATION ───────────────────────────────────
@@ -931,9 +1077,15 @@ document.addEventListener('click', function(e) {
 
   // Delete event
   if (t.dataset.delEvent) {
-    events = events.filter(ev => ev.id !== t.dataset.delEvent);
-    dbDeleteEvent(t.dataset.delEvent).catch(console.error);
-    renderEvents(); toast('Event removed');
+    const id = t.dataset.delEvent;
+    const removed = events.find(ev => ev.id === id);
+    const idx = events.indexOf(removed);
+    optimistic(
+      () => { events = events.filter(ev => ev.id !== id); renderEvents(); toast('Event removed'); },
+      () => dbDeleteEvent(id),
+      () => { events.splice(idx, 0, removed); renderEvents(); },
+      'Could not remove event — please try again.'
+    );
     return;
   }
 
@@ -970,9 +1122,23 @@ document.addEventListener('click', function(e) {
     if (!ta) return;
     const text = ta.value.trim();
     if (!text) { toast('Note cannot be empty.'); return; }
-    a.notes = a.notes.map(n => n.id === +t.dataset.saveEdit ? { ...n, text, editing: false } : n);
-    dbUpdateAthlete(a).catch(console.error);
-    renderNotes(a); toast('Note updated');
+    const noteId = +t.dataset.saveEdit;
+    const note = a.notes.find(n => n.id === noteId);
+    if (!note) return;
+    const priorText = note.text;
+    optimistic(
+      () => {
+        a.notes = a.notes.map(n => n.id === noteId ? { ...n, text, editing: false } : n);
+        renderNotes(a);
+        toast('Note updated');
+      },
+      () => dbUpdateAthlete(a),
+      () => {
+        a.notes = a.notes.map(n => n.id === noteId ? { ...n, text: priorText, editing: false } : n);
+        renderNotes(a);
+      },
+      'Could not update note — please try again.'
+    );
     return;
   }
 
@@ -980,9 +1146,22 @@ document.addEventListener('click', function(e) {
     if (!confirm('Delete this note?')) return;
     const a = athletes.find(x => x.id === curAthId);
     if (!a) return;
-    a.notes = a.notes.filter(n => n.id !== +t.dataset.delNote);
-    dbUpdateAthlete(a).catch(console.error);
-    renderNotes(a); toast('Note deleted');
+    const noteId = +t.dataset.delNote;
+    const removed = a.notes.find(n => n.id === noteId);
+    const idx = a.notes.indexOf(removed);
+    optimistic(
+      () => {
+        a.notes = a.notes.filter(n => n.id !== noteId);
+        renderNotes(a);
+        toast('Note deleted');
+      },
+      () => dbUpdateAthlete(a),
+      () => {
+        a.notes.splice(idx, 0, removed);
+        renderNotes(a);
+      },
+      'Could not delete note — please try again.'
+    );
     return;
   }
 

@@ -109,12 +109,12 @@ async function loadAllData() {
 // ── ATHLETE OPS ───────────────────────────────────────────
 async function dbInsertAthlete(a) {
   const { error } = await db.from('athletes').insert({ id: a.id, ...athleteToRow(a) });
-  if (error) console.error('Insert athlete:', error);
+  if (error) throw error;
 }
 
 async function dbUpdateAthlete(a) {
   const { error } = await db.from('athletes').upsert({ id: a.id, ...athleteToRow(a) });
-  if (error) console.error('Update athlete:', error);
+  if (error) throw error;
 }
 
 // ── COMPETITION OPS ───────────────────────────────────────
@@ -124,8 +124,7 @@ async function dbInsertComp(c) {
     division: c.div, result_date: c.date, place: c.place,
     matches_won: c.matchesWon || 0, matches_lost: c.matchesLost || 0,
   });
-  if (error) console.error('Insert comp:', error);
-  return { error };
+  if (error) throw error;
 }
 
 // ── EVENT OPS ─────────────────────────────────────────────
@@ -138,13 +137,13 @@ async function dbInsertEvent(ev) {
 
 async function dbDeleteEvent(id) {
   const { error } = await db.from('events').delete().eq('id', id);
-  if (error) console.error('Delete event:', error);
+  if (error) throw error;
 }
 
 // ── DELETE ATHLETE ────────────────────────────────────────
 async function dbDeleteAthlete(id) {
   const { error } = await db.from('athletes').delete().eq('id', id);
-  if (error) console.error('Delete athlete:', error);
+  if (error) throw error;
 }
 
 // ── ATTENDANCE OPS ────────────────────────────────────────
@@ -153,13 +152,13 @@ async function dbInsertAtt(s) {
     id: s.id, session_date: s.date, session_date_raw: s.rawDate,
     session_type: s.type, athlete_ids: s.athletes,
   });
-  if (error) console.error('Insert attendance:', error);
+  if (error) throw error;
 }
 
 // ── ACTIVITY LOG ──────────────────────────────────────────
 async function dbAddAct(text, time) {
   const { error } = await db.from('activity_log').insert({ text, time_str: time });
-  if (error) console.error('Insert activity:', error);
+  if (error) console.error('Insert activity:', error); // Fire-and-forget: don't throw, just log
 }
 
 // ── PHOTO UPLOAD ──────────────────────────────────────────
