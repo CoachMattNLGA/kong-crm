@@ -4,6 +4,8 @@
   "outputDirectory": ".",
   "framework": null,
   "rewrites": [
+    { "source": "/portal", "destination": "/portal.html" },
+    { "source": "/portal/(.*)", "destination": "/portal.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
