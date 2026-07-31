@@ -39,6 +39,32 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════
+     SET NEW PASSWORD SCREEN — shown after clicking reset or
+     invite link in email
+     ════════════════════════════════════════════════════════ -->
+<div id="portal-reset-screen" style="display:none;position:fixed;inset:0;background:var(--sidebar);align-items:center;justify-content:center;z-index:999;">
+  <div style="width:320px;">
+    <div style="text-align:center;margin-bottom:28px;">
+      <img src="assets/gorilla.jpg" alt="NLGA" style="width:42px;height:42px;filter:invert(1);display:block;margin:0 auto 12px;">
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:30px;color:var(--purple);letter-spacing:5px;">KONG</div>
+      <div style="font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;text-transform:uppercase;">Set Your Password</div>
+    </div>
+    <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);border-radius:10px;padding:22px;">
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">New Password</label>
+        <input class="fi" id="portal-new-password" type="password" placeholder="Enter new password" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Confirm Password</label>
+        <input class="fi" id="portal-confirm-password" type="password" placeholder="Confirm new password" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div id="portal-reset-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;"></div>
+      <button class="btn btn-p" id="btn-portal-set-password" style="width:100%;padding:9px 12px;font-size:12px;">Set Password &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
      MAIN PORTAL — Single scrollable page
      ════════════════════════════════════════════════════════ -->
 <div id="portal-app" style="display:none;">
