@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KONG — Athlete Portal</title>
+<meta name="description" content="View your training profile, belt history, attendance, skills, and competition record at No Limits Grappling Academy.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="portal.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════
+     LOGIN SCREEN — Athlete Portal
+     ════════════════════════════════════════════════════════ -->
+<div id="portal-login" class="portal-login">
+  <div class="portal-login-card">
+    <div class="portal-login-header">
+      <img src="assets/gorilla.jpg" alt="NLGA">
+      <div class="portal-login-title">KONG</div>
+      <div class="portal-login-subtitle">Athlete Portal</div>
+    </div>
+    <div class="portal-login-box">
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Email</label>
+        <input class="fi" id="portal-email" type="email" placeholder="athlete@email.com" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div class="fg">
+        <label class="fl" style="color:rgba(255,255,255,0.35);">Password</label>
+        <input class="fi" id="portal-password" type="password" placeholder="••••••••" style="background:rgba(255,255,255,0.06);border-color:rgba(255,255,255,0.12);color:#fff;">
+      </div>
+      <div id="portal-error" style="font-size:11px;color:var(--red);margin-bottom:10px;min-height:16px;font-family:'Inter',sans-serif;font-weight:600;letter-spacing:0.5px;"></div>
+      <button class="btn btn-p" id="btn-portal-login" style="width:100%;padding:9px 12px;font-size:12px;">Sign In</button>
+      <button class="btn btn-ghost" id="btn-portal-reset" style="width:100%;margin-top:7px;color:rgba(255,255,255,0.25);font-size:10px;border-color:transparent;">Forgot password?</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════
+     MAIN PORTAL — Single scrollable page
+     ════════════════════════════════════════════════════════ -->
+<div id="portal-app" style="display:none;">
+
+  <!-- HEADER BAR -->
+  <div class="portal-header">
+    <div class="portal-logo">
+      <img src="assets/gorilla.jpg" alt="NLGA">
+      <div class="portal-logo-text">KONG<span>Athlete Portal</span></div>
+    </div>
+    <button class="btn btn-ghost" id="btn-portal-logout" style="color:rgba(255,255,255,0.35);font-size:10px;">Sign Out</button>
+  </div>
+
+  <!-- LOADING STATE -->
+  <div id="portal-loading" class="portal-loading">Loading your profile…</div>
+
+  <!-- ERROR STATE (no matching athlete) -->
+  <div id="portal-error-state" class="portal-error" style="display:none;">
+    <div class="portal-error-icon">🔒</div>
+    <div class="portal-error-title">Profile Not Found</div>
+    <div>We couldn't find an athlete profile linked to your account.<br>Please contact your coach for assistance.</div>
+  </div>
+
+  <!-- PORTAL CONTENT -->
+  <div id="portal-content" class="portal-body" style="display:none;">
+
+    <!-- ── HERO ROW: Profile Card + Belt History ──────── -->
+    <div class="portal-hero">
+
+      <!-- PROFILE CARD -->
+      <div class="portal-profile-card">
+        <div class="portal-p-banner"></div>
+        <div class="portal-p-av-zone">
+          <div class="portal-p-av" id="pp-avatar"></div>
+          <div id="pp-status-tag"></div>
+        </div>
+        <div class="portal-p-info">
+          <div class="portal-p-name" id="pp-name"></div>
+          <div class="portal-p-tag" id="pp-member-since"></div>
+          <div class="p-bg-tag" id="pp-bg"></div>
+          <div class="time-at-nlga" id="pp-time-nlga" style="display:none;"></div>
+
+          <!-- Belt block -->
+          <div class="belt-block">
+            <div class="belt-swatch" id="pp-belt-swatch"></div>
+            <div>
+              <div class="belt-title" id="pp-belt-title"></div>
+              <div class="belt-since" id="pp-belt-since"></div>
+            </div>
+          </div>
+
+          <!-- Stat mini grid -->
+          <div class="sm-grid">
+            <div class="sm"><div class="smv" id="pp-sessions">0</div><div class="sml">Sessions</div></div>
+            <div class="sm"><div class="smv green" id="pp-wins">0</div><div class="sml">Wins</div></div>
+            <div class="sm"><div class="smv red" id="pp-losses">0</div><div class="sml">Losses</div></div>
+            <div class="sm"><div class="smv amber" id="pp-medals">0</div><div class="sml">Medals</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- BELT HISTORY -->
+      <div class="card">
+        <div class="card-t">Belt History</div>
+        <div class="timeline" id="pp-timeline"></div>
+      </div>
+
+    </div>
+
+    <!-- ── ATTENDANCE ─────────────────────────────────── -->
+    <div class="portal-section">
+      <div class="card">
+        <div class="card-t">Attendance — Last 13 Weeks</div>
+        <div class="hm" id="pp-heatmap"></div>
+        <div class="hm-stat" id="pp-hm-stat"></div>
+      </div>
+    </div>
+
+    <!-- ── SILVERBACK SYSTEM ──────────────────────────── -->
+    <div class="portal-section">
+      <div class="card">
+        <div class="card-t">Silverback System — Skill Assessment</div>
+        <div class="portal-skills-grid" id="pp-skills"></div>
+      </div>
+    </div>
+
+    <!-- ── COMPETITION RECORD ─────────────────────────── -->
+    <div class="portal-section">
+      <div class="card">
+        <div class="card-t">Competition Record <span class="portal-comp-summary" id="pp-comp-summary"></span></div>
+        <div id="pp-comp"></div>
+      </div>
+    </div>
+
+    <!-- ── MEMBERSHIP (Coming Soon) ───────────────────── -->
+    <div class="portal-section">
+      <div class="card">
+        <div class="card-t">Membership</div>
+        <!-- TODO: replace with real membership status once Stripe task ships -->
+        <div class="cs" style="padding:24px">
+          <div class="cs-icon">💳</div>
+          <div class="cs-t">Membership Status — Coming Soon</div>
+          <div class="cs-s">Your payment status and billing history will appear here.</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /portal-content -->
+</div><!-- /portal-app -->
+
+<div class="toast" id="portal-toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="portal-supabase.js"></script>
+<script src="portal.js"></script>
+</body>
+</html>
