@@ -4,6 +4,7 @@ const { createClient } = require('@supabase/supabase-js');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE_URL = process.env.SITE_URL;
+const ANON_KEY = 'sb_publishable_aN3U9D-AYzcqXIDoTEwNHw_BSZow8Ah';
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -30,6 +31,7 @@ module.exports = async (req, res) => {
   }
 
   const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
+  const redirectTo = `${SITE_URL}/portal`;
 
   const { data: callerData, error: callerErr } = await admin.auth.getUser(token);
   if (callerErr || !callerData || !callerData.user) {
@@ -70,18 +72,35 @@ module.exports = async (req, res) => {
     .eq('athlete_id', athleteId)
     .maybeSingle();
 
+  // ── Already linked: resend a fresh sign-in/password-set link ──
   if (existingLink) {
-    res.status(409).json({ error: `${athlete.first} ${athlete.last} already has portal access.` });
+    const anon = createClient(SUPABASE_URL, ANON_KEY);
+    const { error: resendErr } = await anon.auth.resetPasswordForEmail(athlete.email, { redirectTo });
+
+    if (resendErr) {
+      res.status(500).json({ error: resendErr.message });
+      return;
+    }
+
+    res.status(200).json({ success: true, resent: true, email: athlete.email });
     return;
   }
 
+  // ── First-time invite ──
   const { data: inviteData, error: inviteErr } = await admin.auth.admin.inviteUserByEmail(
     athlete.email,
-    { redirectTo: `${SITE_URL}/portal` }
+    { redirectTo }
   );
 
   if (inviteErr || !inviteData || !inviteData.user) {
-    res.status(500).json({ error: inviteErr ? inviteErr.message : 'Could not send invite email.' });
+    const msg = inviteErr ? inviteErr.message : 'Could not send invite email.';
+    if (/already registered|already exists/i.test(msg)) {
+      res.status(409).json({
+        error: `An account for ${athlete.email} already exists but isn't linked to this athlete. In Supabase → Authentication → Users, find and delete that user, then try inviting again.`,
+      });
+      return;
+    }
+    res.status(500).json({ error: msg });
     return;
   }
 
@@ -97,5 +116,5 @@ module.exports = async (req, res) => {
     return;
   }
 
-  res.status(200).json({ success: true, email: athlete.email });
+  res.status(200).json({ success: true, resent: false, email: athlete.email });
 };

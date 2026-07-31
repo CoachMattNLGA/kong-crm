@@ -758,8 +758,13 @@ async function inviteToPortal() {
       return;
     }
 
-    addAct(`${a.first} ${a.last} invited to the athlete portal`);
-    toast(`Invite sent to ${result.email}`);
+    if (result.resent) {
+      addAct(`${a.first} ${a.last} — new portal sign-in link sent`);
+      toast(`New sign-in link sent to ${result.email}`);
+    } else {
+      addAct(`${a.first} ${a.last} invited to the athlete portal`);
+      toast(`Invite sent to ${result.email}`);
+    }
   } catch (err) {
     console.error('Invite to portal failed:', err);
     toast('⚠ Could not send invite — please try again.');
@@ -1362,23 +1367,46 @@ document.getElementById('login-email').addEventListener('keydown', e => {
   if (e.key === 'Enter') handleLogin();
 });
 
+async function isAthleteSession(session) {
+  if (!session) return false;
+  const { data } = await db
+    .from('athlete_accounts')
+    .select('id')
+    .eq('auth_user_id', session.user.id)
+    .maybeSingle();
+  return !!data;
+}
+
+async function rejectAthleteAndRedirect() {
+  await signOut();
+  showLogin();
+  const errEl = document.getElementById('login-error');
+  errEl.style.color = 'var(--red)';
+  errEl.innerHTML = `This is the coach dashboard. Athletes should use the <a href="/portal" style="color:var(--purple)">Athlete Portal</a> — if your link expired, ask your coach to resend it.`;
+}
+
 // ── AUTH INIT (runs on page load) ──────────────────────
 (async function () {
   showLogin(); // default: show login while checking session
 
   const isRecovery = window.location.hash.includes('type=recovery');
   const session = await getSession();
-  if (session && !isRecovery) await initApp();
+  if (session && !isRecovery) {
+    if (await isAthleteSession(session)) { await rejectAthleteAndRedirect(); }
+    else { await initApp(); }
+  }
 
   onAuthChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      // User clicked the reset link — show the set-new-password screen
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('crm').style.display          = 'none';
       document.getElementById('reset-screen').style.display = 'flex';
       return;
     }
-    if (event === 'SIGNED_IN' && session) await initApp();
-    if (event === 'SIGNED_OUT')           showLogin();
+    if (event === 'SIGNED_IN' && session) {
+      if (await isAthleteSession(session)) { await rejectAthleteAndRedirect(); }
+      else { await initApp(); }
+    }
+    if (event === 'SIGNED_OUT') showLogin();
   });
 })();
