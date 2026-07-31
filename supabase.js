@@ -4,7 +4,9 @@ const SUPABASE_URL = 'https://huguxargfxryyhavjxqy.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_aN3U9D-AYzcqXIDoTEwNHw_BSZow8Ah';
 
 const { createClient } = window.supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { storageKey: 'kong-coach-auth' }
+});
 
 // ── ROW MAPPERS (DB → JS) ─────────────────────────────────
 function mapAthlete(r) {

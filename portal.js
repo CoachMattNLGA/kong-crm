@@ -1,14 +1,10 @@
 /* ── KONG CRM — portal.js ─── Athlete Portal Logic ──────
- *
- * Self-contained portal logic for the read-only athlete view.
- * Uses portal-supabase.js for lean auth & RLS-scoped data queries
- * (portalSignIn, portalSignOut, portalGetSession,
- * portalSendPasswordReset, portalOnAuthChange, resolveMyAthleteId, loadPortalData).
+ * Uses portal-supabase.js for auth & data queries, and its
+ * global `db` Supabase client instance.
  * ─────────────────────────────────────────────────────── */
 
 'use strict';
 
-// ── CONSTANTS ────────────────────────────────────────────
 const P_BELTS = [
   { name: 'White',  color: '#d4d4d4' },
   { name: 'Blue',   color: '#1d4ed8' },
@@ -30,7 +26,6 @@ const P_AVATAR_COLORS = [
   '#b45309','#9f1239','#0369a1','#6d28d9'
 ];
 
-// ── HELPERS ──────────────────────────────────────────────
 function pEsc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function pCol(i) { return P_AVATAR_COLORS[i % P_AVATAR_COLORS.length]; }
 function pInitials(a) { return ((a.first ? a.first[0] : '') + (a.last ? a.last[0] : '')).toUpperCase() || 'A'; }
@@ -67,7 +62,14 @@ function pTimeAtNLGA(sinceISO) {
   } catch(e) { return null; }
 }
 
-// ── TOAST ────────────────────────────────────────────────
+function computeMatchRecord(comps) {
+  return (comps || []).reduce((acc, c) => {
+    acc.wins   += (c.matches_won  ?? c.matchesWon  ?? 0);
+    acc.losses += (c.matches_lost ?? c.matchesLost ?? 0);
+    return acc;
+  }, { wins: 0, losses: 0 });
+}
+
 function pToast(msg) {
   const t = document.getElementById('portal-toast');
   if (!t) return;
@@ -76,21 +78,27 @@ function pToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2500);
 }
 
-// ── UI VISIBILITY ────────────────────────────────────────
 function showPortalLogin() {
   document.getElementById('portal-login').style.display = 'flex';
   document.getElementById('portal-app').style.display   = 'none';
+  document.getElementById('portal-reset-screen').style.display = 'none';
+}
+
+function showPortalResetScreen() {
+  document.getElementById('portal-login').style.display = 'none';
+  document.getElementById('portal-app').style.display   = 'none';
+  document.getElementById('portal-reset-screen').style.display = 'flex';
 }
 
 function showPortalApp() {
   document.getElementById('portal-login').style.display = 'none';
+  document.getElementById('portal-reset-screen').style.display = 'none';
   document.getElementById('portal-app').style.display   = 'block';
   document.getElementById('portal-loading').style.display      = 'block';
   document.getElementById('portal-error-state').style.display   = 'none';
   document.getElementById('portal-content').style.display       = 'none';
 }
 
-// ── AUTH HANDLERS ────────────────────────────────────────
 async function portalHandleLogin() {
   const email    = document.getElementById('portal-email').value.trim();
   const password = document.getElementById('portal-password').value;
@@ -136,7 +144,33 @@ async function portalHandleLogout() {
   await portalSignOut();
 }
 
-// ── DATA LOADING & INIT ──────────────────────────────────
+async function portalHandleSetPassword() {
+  const pw1   = document.getElementById('portal-new-password').value;
+  const pw2   = document.getElementById('portal-confirm-password').value;
+  const errEl = document.getElementById('portal-reset-error');
+  errEl.style.color = 'var(--red)';
+  errEl.textContent = '';
+
+  if (!pw1) { errEl.textContent = 'Enter a new password.'; return; }
+  if (pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
+
+  const btn = document.getElementById('btn-portal-set-password');
+  btn.textContent = 'Saving…'; btn.disabled = true;
+
+  const { error } = await db.auth.updateUser({ password: pw1 });
+
+  btn.textContent = 'Set Password & Continue'; btn.disabled = false;
+
+  if (error) {
+    errEl.textContent = error.message;
+    return;
+  }
+
+  history.replaceState(null, '', window.location.pathname);
+  await initPortal();
+}
+
 async function initPortal() {
   showPortalApp();
 
@@ -144,10 +178,12 @@ async function initPortal() {
     const athleteId = await resolveMyAthleteId().catch(() => null);
 
     if (!athleteId) {
-      // User is authenticated but absent from athlete_accounts → Coach Account
       const errEl = document.getElementById('portal-error');
       errEl.style.color = 'var(--red)';
-      errEl.textContent = 'This is the athlete portal. Coaches should sign in at the main dashboard.';
+      errEl.innerHTML =
+        `This account doesn't have athlete portal access. ` +
+        `<a href="/" style="color:var(--purple)">Go to the coach dashboard</a> ` +
+        `or sign in with a different account.`;
       await portalSignOut();
       showPortalLogin();
       return;
@@ -161,14 +197,14 @@ async function initPortal() {
       return;
     }
 
-    // Render all sections
-    renderPortalProfile(data.athlete);
+    const record = computeMatchRecord(data.comps);
+
+    renderPortalProfile(data.athlete, record);
     renderPortalBeltHistory(data.athlete);
     renderPortalAttendance(data.athlete, data.attendance || []);
     renderPortalSkills(data.athlete);
-    renderPortalCompetition(data.athlete, data.comps || []);
+    renderPortalCompetition(data.comps || [], record);
 
-    // Show content
     document.getElementById('portal-loading').style.display = 'none';
     document.getElementById('portal-content').style.display = 'block';
 
@@ -179,8 +215,7 @@ async function initPortal() {
   }
 }
 
-// ── RENDER: PROFILE ──────────────────────────────────────
-function renderPortalProfile(a) {
+function renderPortalProfile(a, record) {
   const avEl = document.getElementById('pp-avatar');
   if (a.photo_url) {
     avEl.style.background = 'transparent';
@@ -215,11 +250,10 @@ function renderPortalProfile(a) {
   document.getElementById('pp-belt-since').textContent       = 'Since ' + (a.history && a.history[0] ? a.history[0].date : '—');
 
   document.getElementById('pp-sessions').textContent = a.sessions || 0;
-  document.getElementById('pp-wins').textContent     = a.wins || 0;
-  document.getElementById('pp-losses').textContent   = a.losses || 0;
+  document.getElementById('pp-wins').textContent     = record.wins;
+  document.getElementById('pp-losses').textContent   = record.losses;
 }
 
-// ── RENDER: BELT HISTORY ─────────────────────────────────
 function renderPortalBeltHistory(a) {
   const el = document.getElementById('pp-timeline');
   el.innerHTML = '';
@@ -236,7 +270,6 @@ function renderPortalBeltHistory(a) {
   });
 }
 
-// ── RENDER: ATTENDANCE HEATMAP ───────────────────────────
 function renderPortalAttendance(a, attRows) {
   const hmEl   = document.getElementById('pp-heatmap');
   const dateSet = new Set(
@@ -257,7 +290,6 @@ function renderPortalAttendance(a, attRows) {
   document.getElementById('pp-hm-stat').textContent = (a.sessions || 0) + ' total sessions';
 }
 
-// ── RENDER: SKILLS ───────────────────────────────────────
 function renderPortalSkills(a) {
   const el = document.getElementById('pp-skills');
   el.innerHTML = '';
@@ -279,19 +311,16 @@ function renderPortalSkills(a) {
   el.appendChild(rightCol);
 }
 
-// ── RENDER: COMPETITION RECORD ───────────────────────────
-function renderPortalCompetition(a, myComps) {
+function renderPortalCompetition(myComps, record) {
   const el      = document.getElementById('pp-comp');
   const summEl  = document.getElementById('pp-comp-summary');
 
-  const totalW = myComps.reduce((s, c) => s + (c.matches_won || c.matchesWon || 0), 0);
-  const totalL = myComps.reduce((s, c) => s + (c.matches_lost || c.matchesLost || 0), 0);
-  const golds  = myComps.filter(c => c.place === '1').length;
+  const golds   = myComps.filter(c => c.place === '1').length;
   const silvers = myComps.filter(c => c.place === '2').length;
 
   let summParts = [];
-  if (totalW || totalL) summParts.push(`<span class="green">${totalW}W</span>-<span class="red">${totalL}L</span>`);
-  if (golds)  summParts.push(`<span class="amber">${golds} Gold</span>`);
+  if (record.wins || record.losses) summParts.push(`<span class="green">${record.wins}W</span>-<span class="red">${record.losses}L</span>`);
+  if (golds)   summParts.push(`<span class="amber">${golds} Gold</span>`);
   if (silvers) summParts.push(`${silvers} Silver`);
   summEl.innerHTML = summParts.length ? '· ' + summParts.join(' · ') : '';
 
@@ -330,12 +359,12 @@ function renderPortalCompetition(a, myComps) {
   });
 }
 
-// ── EVENT LISTENERS ──────────────────────────────────────
 document.addEventListener('click', function(e) {
   const t = e.target;
-  if (t.id === 'btn-portal-login')  { portalHandleLogin(); return; }
-  if (t.id === 'btn-portal-reset')  { portalHandleResetPassword(); return; }
-  if (t.id === 'btn-portal-logout') { portalHandleLogout(); return; }
+  if (t.id === 'btn-portal-login')        { portalHandleLogin(); return; }
+  if (t.id === 'btn-portal-reset')        { portalHandleResetPassword(); return; }
+  if (t.id === 'btn-portal-logout')       { portalHandleLogout(); return; }
+  if (t.id === 'btn-portal-set-password') { portalHandleSetPassword(); return; }
 });
 
 document.getElementById('portal-password').addEventListener('keydown', e => {
@@ -345,23 +374,33 @@ document.getElementById('portal-email').addEventListener('keydown', e => {
   if (e.key === 'Enter') portalHandleLogin();
 });
 
-// ── AUTH INIT ────────────────────────────────────────────
 (async function () {
   showPortalLogin();
 
-  const isRecovery = window.location.hash.includes('type=recovery');
-  const session = await portalGetSession();
+  const hash       = window.location.hash;
+  const isRecovery = hash.includes('type=recovery');
+  const isInvite   = hash.includes('type=invite');
+  const session    = await portalGetSession();
 
-  if (session && !isRecovery) {
+  if (session && (isRecovery || isInvite)) {
+    showPortalResetScreen();
+  } else if (session) {
     await initPortal();
   }
 
   portalOnAuthChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
-      pToast('Password recovery mode enabled.');
+      showPortalResetScreen();
       return;
     }
-    if (event === 'SIGNED_IN' && session) await initPortal();
+    if (event === 'SIGNED_IN' && session) {
+      const h = window.location.hash;
+      if (h.includes('type=invite')) {
+        showPortalResetScreen();
+        return;
+      }
+      await initPortal();
+    }
     if (event === 'SIGNED_OUT') showPortalLogin();
   });
 })();

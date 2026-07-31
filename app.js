@@ -729,6 +729,45 @@ async function confirmDeleteAthlete() {
   }
 }
 
+// ── PORTAL INVITE ──────────────────────────────────────
+async function inviteToPortal() {
+  const a = athletes.find(x => x.id === curAthId);
+  if (!a) return;
+  if (!a.email) { toast('Add an email address for this athlete first.'); return; }
+
+  const btn = document.getElementById('btn-invite-portal');
+  const originalText = btn.textContent;
+  btn.textContent = 'Sending…'; btn.disabled = true;
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { toast('Your session expired — please sign in again.'); return; }
+
+    const res = await fetch('/api/invite-athlete', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify({ athleteId: a.id }),
+    });
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast('⚠ ' + (result.error || 'Could not send invite.'));
+      return;
+    }
+
+    addAct(`${a.first} ${a.last} invited to the athlete portal`);
+    toast(`Invite sent to ${result.email}`);
+  } catch (err) {
+    console.error('Invite to portal failed:', err);
+    toast('⚠ Could not send invite — please try again.');
+  } finally {
+    btn.textContent = originalText; btn.disabled = false;
+  }
+}
+
 function openReactivate(id) {
   pendingReactivateId = id;
   const a = athletes.find(x => x.id === id);
@@ -1185,6 +1224,7 @@ document.addEventListener('click', function(e) {
   if (t.id === 'btn-confirm-inactive')        { markInactive(); return; }
   if (t.id === 'btn-confirm-reactivate')      { reactivate(); return; }
   if (t.id === 'btn-delete-athlete')          { openDeleteAthlete(curAthId); return; }
+  if (t.id === 'btn-invite-portal')           { inviteToPortal(); return; }
   if (t.id === 'btn-confirm-delete-athlete')  { confirmDeleteAthlete(); return; }
   if (t.id === 'btn-add-note')           { openModal('note-modal'); return; }
   if (t.id === 'btn-back-athletes')      { nav('athletes', document.querySelectorAll('.ni')[1]); return; }
