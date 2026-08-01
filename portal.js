@@ -377,6 +377,21 @@ document.getElementById('portal-email').addEventListener('keydown', e => {
 (async function () {
   showPortalLogin();
 
+  // Handoff from the coach dashboard — a recovery/invite link for an
+  // athlete account landed there first (misconfigured redirect or stale
+  // link); pick up the live session here instead of failing.
+  const handoff = sessionStorage.getItem('kong_recovery_handoff');
+  if (handoff) {
+    sessionStorage.removeItem('kong_recovery_handoff');
+    try {
+      const { access_token, refresh_token } = JSON.parse(handoff);
+      const { error } = await db.auth.setSession({ access_token, refresh_token });
+      if (!error) { showPortalResetScreen(); return; }
+    } catch (e) {
+      console.error('Recovery handoff failed:', e);
+    }
+  }
+
   const hash       = window.location.hash;
   const isRecovery = hash.includes('type=recovery');
   const isInvite   = hash.includes('type=invite');
