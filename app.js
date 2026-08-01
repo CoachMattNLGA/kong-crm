@@ -1386,26 +1386,41 @@ async function rejectAthleteAndRedirect() {
 }
 
 // ── AUTH INIT (runs on page load) ──────────────────────
+function handoffToPortal(session) {
+  sessionStorage.setItem('kong_recovery_handoff', JSON.stringify({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+  }));
+  window.location.href = '/portal';
+}
+
 (async function () {
   showLogin(); // default: show login while checking session
 
   const isRecovery = window.location.hash.includes('type=recovery');
+  const isInvite    = window.location.hash.includes('type=invite');
   const session = await getSession();
-  if (session && !isRecovery) {
+  if (session && !isRecovery && !isInvite) {
     if (await isAthleteSession(session)) { await rejectAthleteAndRedirect(); }
     else { await initApp(); }
   }
 
   onAuthChange(async (event, session) => {
     if (event === 'PASSWORD_RECOVERY') {
+      if (await isAthleteSession(session)) { handoffToPortal(session); return; }
       document.getElementById('login-screen').style.display = 'none';
       document.getElementById('crm').style.display          = 'none';
       document.getElementById('reset-screen').style.display = 'flex';
       return;
     }
     if (event === 'SIGNED_IN' && session) {
-      if (await isAthleteSession(session)) { await rejectAthleteAndRedirect(); }
-      else { await initApp(); }
+      if (await isAthleteSession(session)) {
+        const h = window.location.hash;
+        if (h.includes('type=invite') || h.includes('type=recovery')) { handoffToPortal(session); return; }
+        await rejectAthleteAndRedirect();
+      } else {
+        await initApp();
+      }
     }
     if (event === 'SIGNED_OUT') showLogin();
   });
