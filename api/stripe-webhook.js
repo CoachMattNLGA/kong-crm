@@ -7,8 +7,6 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
 const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
-module.exports.config = { api: { bodyParser: false } };
-
 function getRawBody(req) {
     return new Promise((resolve, reject) => {
         const chunks = [];
@@ -23,7 +21,7 @@ function toDateString(epochSeconds) {
     return new Date(epochSeconds * 1000).toISOString().split('T')[0];
 }
 
-module.exports = async (req, res) => {
+const handler = async (req, res) => {
     if (req.method !== 'POST') {
         res.status(405).send('Method not allowed');
         return;
@@ -53,8 +51,16 @@ module.exports = async (req, res) => {
         .insert({ event_id: event.id });
 
     if (dupeErr) {
-        // unique_violation means we've already processed this event id
-        res.status(200).json({ received: true, duplicate: true });
+        if (dupeErr.code === '23505') {
+            // Postgres unique_violation — this event was genuinely already processed.
+            res.status(200).json({ received: true, duplicate: true });
+            return;
+        }
+        // Any other error (bad service role key, RLS denial, network issue, etc.)
+        // is a real failure — log it loudly and tell Stripe to retry, don't
+        // silently pretend success.
+        console.error('stripe_webhook_events insert failed (not a duplicate):', dupeErr);
+        res.status(500).json({ error: 'Could not record webhook event.', detail: dupeErr.message });
         return;
     }
 
@@ -116,3 +122,6 @@ module.exports = async (req, res) => {
         res.status(500).json({ error: 'Webhook processing failed.' });
     }
 };
+
+handler.config = { api: { bodyParser: false } };
+module.exports = handler;
