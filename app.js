@@ -25,19 +25,19 @@
 
 // ── CONSTANTS ──────────────────────────────────────────
 const BELTS = [
-  { name: 'White',  color: '#d4d4d4' },
-  { name: 'Blue',   color: '#1d4ed8' },
+  { name: 'White', color: '#d4d4d4' },
+  { name: 'Blue', color: '#1d4ed8' },
   { name: 'Purple', color: '#7c3aed' },
-  { name: 'Brown',  color: '#92400e' },
-  { name: 'Black',  color: '#111111' },
+  { name: 'Brown', color: '#92400e' },
+  { name: 'Black', color: '#111111' },
 ];
 
 const BELT_MAP = { white: 0, blue: 1, purple: 2, brown: 3, black: 4 };
 const BELT_CLS = { white: 'bw', blue: 'bbl', purple: 'bp', brown: 'bbr', black: 'bk' };
 
 const AVATAR_COLORS = [
-  '#B549B6','#7c3aed','#1d4ed8','#047857',
-  '#b45309','#9f1239','#0369a1','#6d28d9'
+  '#B549B6', '#7c3aed', '#1d4ed8', '#047857',
+  '#b45309', '#9f1239', '#0369a1', '#6d28d9'
 ];
 
 const SKILLS = [
@@ -48,36 +48,36 @@ const SKILLS = [
 const INACTIVE_REASONS = ['Injury', 'Moved away', 'Quit', 'School', 'Sports Season'];
 
 // ── STATE ──────────────────────────────────────────────
-let athletes  = [];
-let comps     = [];
-let events    = [];
-let attLog    = [];
-let actLog    = [];
-let curAthId  = null;
+let athletes = [];
+let comps = [];
+let events = [];
+let attLog = [];
+let actLog = [];
+let curAthId = null;
 let pendingBelt = null;
 let curFilter = 'all';
-let pendingInactiveId   = null;
+let pendingInactiveId = null;
 let pendingReactivateId = null;
 
 // ── HELPERS ────────────────────────────────────────────
-function newUUID()     { return crypto.randomUUID(); }
-function nowId()       { return Date.now(); }
-function todayISO()    { return new Date().toISOString().split('T')[0]; }
-function todayStr()    { return new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
-function esc(s)        { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function col(i)        { return AVATAR_COLORS[i % AVATAR_COLORS.length]; }
-function initials(a)   { return (a.first[0] + a.last[0]).toUpperCase(); }
-function beltIdx(b)    { return BELT_MAP[b] || 0; }
-function beltCls(b)    { return BELT_CLS[b] || 'bw'; }
+function newUUID() { return crypto.randomUUID(); }
+function nowId() { return Date.now(); }
+function todayISO() { return new Date().toISOString().split('T')[0]; }
+function todayStr() { return new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); }
+function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+function col(i) { return AVATAR_COLORS[i % AVATAR_COLORS.length]; }
+function initials(a) { return (a.first[0] + a.last[0]).toUpperCase(); }
+function beltIdx(b) { return BELT_MAP[b] || 0; }
+function beltCls(b) { return BELT_CLS[b] || 'bw'; }
 
 function fmtDate(d) {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-  catch(e) { return d; }
+  catch (e) { return d; }
 }
 
 function fmtShort(d) {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-  catch(e) { return d; }
+  catch (e) { return d; }
 }
 
 /**
@@ -89,9 +89,9 @@ function timeAtNLGA(sinceISO) {
   if (!sinceISO) return null;
   try {
     const start = new Date(sinceISO);
-    const now   = new Date();
-    let years  = now.getFullYear() - start.getFullYear();
-    let months = now.getMonth()    - start.getMonth();
+    const now = new Date();
+    let years = now.getFullYear() - start.getFullYear();
+    let months = now.getMonth() - start.getMonth();
     if (months < 0) { years--; months += 12; }
     const totalMonths = years * 12 + months;
     if (totalMonths < 1) {
@@ -102,10 +102,21 @@ function timeAtNLGA(sinceISO) {
     if (years === 0) return months + ' mo';
     if (months === 0) return years + ' yr' + (years !== 1 ? 's' : '');
     return years + ' yr ' + months + ' mo';
-  } catch(e) { return null; }
+  } catch (e) { return null; }
 }
 
 function fmtContact(a) { return a.email || a.phone || '—'; }
+
+function paymentBadge(status) {
+  const map = {
+    active: ['pay-active', 'Active'],
+    overdue: ['pay-overdue', 'Overdue'],
+    cancelled: ['pay-cancelled', 'Cancelled'],
+    inactive: ['pay-inactive', 'No Membership'],
+  };
+  const [cls, label] = map[status] || map.inactive;
+  return `<span class="pay-badge ${cls}">${label}</span>`;
+}
 
 function addAct(txt) {
   const entry = { text: txt, time: todayStr() };
@@ -146,7 +157,7 @@ async function optimistic(applyLocal, syncRemote, rollback, errorMsg) {
 
 // ── AVATAR HTML ────────────────────────────────────────
 function avHTML(a, size = 30, fs = 12) {
-  const i  = athletes.indexOf(a);
+  const i = athletes.indexOf(a);
   const bg = col(i);
   if (a.photo) {
     return `<div class="av" style="width:${size}px;height:${size}px;">
@@ -157,7 +168,7 @@ function avHTML(a, size = 30, fs = 12) {
 }
 
 // ── MODAL HELPERS ──────────────────────────────────────
-function openModal(id)  { document.getElementById(id).style.display = 'flex'; }
+function openModal(id) { document.getElementById(id).style.display = 'flex'; }
 function closeModal(id) { document.getElementById(id).style.display = 'none'; }
 
 // ── NAVIGATION ─────────────────────────────────────────
@@ -177,25 +188,25 @@ function nav(page, el) {
 }
 
 function renderPage(p) {
-  if (p === 'dashboard')        renderDashboard();
-  else if (p === 'athletes')    renderAthletes();
-  else if (p === 'attendance')  renderAttendance();
-  else if (p === 'ranks')       renderRanks();
+  if (p === 'dashboard') renderDashboard();
+  else if (p === 'athletes') renderAthletes();
+  else if (p === 'attendance') renderAttendance();
+  else if (p === 'ranks') renderRanks();
   else if (p === 'competition') renderComp();
-  else if (p === 'events')      renderEvents();
-  else if (p === 'profile')     renderProfile();
+  else if (p === 'events') renderEvents();
+  else if (p === 'profile') renderProfile();
 }
 
 // ── DASHBOARD ──────────────────────────────────────────
 function renderDashboard() {
-  const active   = athletes.filter(a => a.status === 'active');
+  const active = athletes.filter(a => a.status === 'active');
   const inactive = athletes.filter(a => a.status === 'inactive');
-  const wins     = comps.reduce((sum, c) => sum + (c.matchesWon  || 0), 0);
-  const losses   = comps.reduce((sum, c) => sum + (c.matchesLost || 0), 0);
+  const wins = comps.reduce((sum, c) => sum + (c.matchesWon || 0), 0);
+  const losses = comps.reduce((sum, c) => sum + (c.matchesLost || 0), 0);
 
-  document.getElementById('s-active').textContent   = active.length;
+  document.getElementById('s-active').textContent = active.length;
   document.getElementById('s-sessions').textContent = attLog.length;
-  document.getElementById('s-record').textContent   = wins + '-' + losses;
+  document.getElementById('s-record').textContent = wins + '-' + losses;
   document.getElementById('s-inactive').textContent = inactive.length;
 
   // Roster
@@ -213,7 +224,7 @@ function renderDashboard() {
 
   // Attendance bars
   const aEl = document.getElementById('d-att'); aEl.innerHTML = '';
-  const mx  = Math.max(...active.map(a => a.sessions), 1);
+  const mx = Math.max(...active.map(a => a.sessions), 1);
   active.slice(0, 5).forEach(a => {
     const p = Math.round((a.sessions / mx) * 100);
     aEl.innerHTML += `<div class="bar-row">
@@ -227,7 +238,7 @@ function renderDashboard() {
   const evEl = document.getElementById('d-events'); evEl.innerHTML = '';
   if (!events.length) { evEl.innerHTML = '<div class="empty-state">No upcoming events.</div>'; }
   events.slice(0, 3).forEach(ev => {
-    const d  = new Date(ev.date + 'T00:00:00');
+    const d = new Date(ev.date + 'T00:00:00');
     const mo = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
     const dy = d.getDate();
     evEl.innerHTML += `<div class="ev-item">
@@ -269,8 +280,8 @@ function renderFTabs() {
   const act = athletes.filter(a => a.status === 'active').length;
   const ina = athletes.filter(a => a.status === 'inactive').length;
   document.getElementById('ftabs').innerHTML = [
-    { k: 'all',      l: 'All',      n: all },
-    { k: 'active',   l: 'Active',   n: act },
+    { k: 'all', l: 'All', n: all },
+    { k: 'active', l: 'Active', n: act },
     { k: 'inactive', l: 'Inactive', n: ina },
   ].map(t => `<button class="ftab${curFilter === t.k ? ' on' : ''}" data-filter="${t.k}">${t.l}<span class="ftab-ct">${t.n}</span></button>`).join('');
 }
@@ -279,21 +290,22 @@ function renderAthletes(search = '') {
   renderFTabs();
   let list = athletes;
   if (search) list = list.filter(a => (a.first + ' ' + a.last + a.email + a.phone).toLowerCase().includes(search.toLowerCase()));
-  const activeList   = curFilter === 'inactive' ? [] : list.filter(a => a.status === 'active');
-  const inactiveList = curFilter === 'active'   ? [] : list.filter(a => a.status === 'inactive');
+  const activeList = curFilter === 'inactive' ? [] : list.filter(a => a.status === 'active');
+  const inactiveList = curFilter === 'active' ? [] : list.filter(a => a.status === 'inactive');
 
   const aEl = document.getElementById('a-list'); aEl.innerHTML = '';
   if (!activeList.length && curFilter !== 'inactive') {
     aEl.innerHTML = '<div class="empty-state">No active athletes.</div>';
   }
   activeList.forEach(a => {
-    aEl.innerHTML += `<div class="td-row at7">
+    aEl.innerHTML += `<div class="td-row at8">
       <div class="td"><div class="ac">${avHTML(a, 28, 11)}<span style="font-weight:600;cursor:pointer" data-profile="${a.id}">${a.first} ${a.last}</span></div></div>
       <div class="td"><span class="bb ${beltCls(a.belt)}">${a.belt}</span></div>
       <div class="td"><span class="sb-active">● Active</span></div>
       <div class="td tdm" style="font-size:11px">${fmtContact(a)}</div>
       <div class="td tdm">${a.sessions}</div>
       <div class="td"><span style="color:var(--green)">${a.wins}W</span> <span style="color:var(--text3)">-</span> <span style="color:var(--red)">${a.losses}L</span></div>
+      <div class="td">${paymentBadge(a.paymentStatus)}</div>
       <div class="td" style="display:flex;gap:4px">
         <button class="btn btn-sm" data-profile="${a.id}">View</button>
         <button class="btn btn-sm btn-red" data-inactive="${a.id}">Inactive</button>
@@ -301,7 +313,7 @@ function renderAthletes(search = '') {
     </div>`;
   });
 
-  const inacSec  = document.getElementById('inactive-sec');
+  const inacSec = document.getElementById('inactive-sec');
   const inacList = document.getElementById('inactive-list');
   inacList.innerHTML = '';
   if (!inactiveList.length) { inacSec.style.display = 'none'; return; }
@@ -342,11 +354,11 @@ function renderAttendance() {
   const counts = {};
   attLog.forEach(s => s.athletes.forEach(id => counts[id] = (counts[id] || 0) + 1));
   const topId = Object.keys(counts).sort((a, b) => counts[b] - counts[a])[0];
-  const topA  = topId ? athletes.find(a => a.id === topId) : null;
+  const topA = topId ? athletes.find(a => a.id === topId) : null;
   document.getElementById('att-top').textContent = topA ? topA.first + ' ' + topA.last : '—';
 
   const bEl = document.getElementById('att-bars'); bEl.innerHTML = '';
-  const mx  = Math.max(...athletes.map(a => a.sessions), 1);
+  const mx = Math.max(...athletes.map(a => a.sessions), 1);
   athletes.forEach(a => {
     const p = Math.round((a.sessions / mx) * 100);
     bEl.innerHTML += `<div class="bar-row" style="margin-bottom:9px">
@@ -360,7 +372,7 @@ function renderAttendance() {
 // ── RANKS ──────────────────────────────────────────────
 function renderRanks() {
   const active = athletes.filter(a => a.status === 'active');
-  const rEl    = document.getElementById('rank-list'); rEl.innerHTML = '';
+  const rEl = document.getElementById('rank-list'); rEl.innerHTML = '';
   active.forEach(a => {
     rEl.innerHTML += `<div class="promo-row">
       <div class="pr-av" style="background:${col(athletes.indexOf(a))}">${avHTML(a, 34, 12)}</div>
@@ -387,20 +399,20 @@ function renderRanks() {
 
 // ── COMPETITION ─────────────────────────────────────────
 function renderComp() {
-  const wins   = comps.reduce((sum, c) => sum + (c.matchesWon  || 0), 0);
+  const wins = comps.reduce((sum, c) => sum + (c.matchesWon || 0), 0);
   const losses = comps.reduce((sum, c) => sum + (c.matchesLost || 0), 0);
-  document.getElementById('c-wins').textContent   = wins;
+  document.getElementById('c-wins').textContent = wins;
   document.getElementById('c-losses').textContent = losses;
-  document.getElementById('c-gold').textContent   = comps.filter(c => c.place === '1').length;
+  document.getElementById('c-gold').textContent = comps.filter(c => c.place === '1').length;
   document.getElementById('c-events').textContent = [...new Set(comps.map(c => c.event))].length;
 
   const el = document.getElementById('comp-list'); el.innerHTML = '';
   comps.slice().reverse().forEach(c => {
-    const a        = athletes.find(x => x.id === c.athleteId);
-    const pMap     = { '1': ['rg','GOLD'], '2': ['rs','SILVER'], '3': ['rbrz','BRONZE'], 'loss': ['rl','LOSS'] };
-    const [cls, lbl] = pMap[c.place] || ['rl','?'];
-    const placeText  = { '1':'1st','2':'2nd','3':'3rd','loss':'Loss' }[c.place] || c.place;
-    const matchRec   = (c.matchesWon || c.matchesLost)
+    const a = athletes.find(x => x.id === c.athleteId);
+    const pMap = { '1': ['rg', 'GOLD'], '2': ['rs', 'SILVER'], '3': ['rbrz', 'BRONZE'], 'loss': ['rl', 'LOSS'] };
+    const [cls, lbl] = pMap[c.place] || ['rl', '?'];
+    const placeText = { '1': '1st', '2': '2nd', '3': '3rd', 'loss': 'Loss' }[c.place] || c.place;
+    const matchRec = (c.matchesWon || c.matchesLost)
       ? `<span style="font-size:11px;color:var(--text3)">${c.matchesWon}-${c.matchesLost}</span>`
       : '';
     el.innerHTML += `<div class="td-row ct6">
@@ -419,7 +431,7 @@ function renderEvents() {
   const el = document.getElementById('events-list'); el.innerHTML = '';
   if (!events.length) { el.innerHTML = '<div class="cs" style="text-align:center;color:var(--text3);font-size:13px;padding:30px">No events yet.</div>'; return; }
   events.forEach(ev => {
-    const d  = new Date(ev.date + 'T00:00:00');
+    const d = new Date(ev.date + 'T00:00:00');
     const mo = d.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
     const dy = d.getDate();
     el.innerHTML += `<div class="card" style="margin-bottom:10px;display:flex;align-items:center;gap:13px">
@@ -435,7 +447,7 @@ function renderEvents() {
 
 // ── PROFILE ────────────────────────────────────────────
 function openProfile(id) {
-  curAthId    = id;
+  curAthId = id;
   pendingBelt = null;
   nav('profile', null);
 }
@@ -445,7 +457,7 @@ function renderProfile() {
   if (!a) return;
   if (pendingBelt === null) pendingBelt = beltIdx(a.belt);
 
-  const i    = athletes.indexOf(a);
+  const i = athletes.indexOf(a);
   const avEl = document.getElementById('prof-av');
   avEl.style.background = a.photo ? 'transparent' : col(i);
   avEl.innerHTML = a.photo
@@ -453,14 +465,14 @@ function renderProfile() {
     : initials(a);
 
   document.getElementById('prof-name').textContent = a.first + ' ' + a.last;
-  document.getElementById('prof-tag').textContent  = 'NLGA · Member since ' + a.since;
-  document.getElementById('prof-bg').innerHTML     = `<span class="tag tag-comp">${a.bg || 'Athlete'}</span>`;
+  document.getElementById('prof-tag').textContent = 'NLGA · Member since ' + a.since;
+  document.getElementById('prof-bg').innerHTML = `<span class="tag tag-comp">${a.bg || 'Athlete'}</span>`;
 
   // Time at NLGA
   const timeEl = document.getElementById('prof-time-nlga');
   const t = timeAtNLGA(a.sinceISO);
   if (t) { timeEl.innerHTML = `⏱ Time at NLGA: <span>${t}</span>`; timeEl.style.display = 'flex'; }
-  else   { timeEl.style.display = 'none'; }
+  else { timeEl.style.display = 'none'; }
 
   // Status tag
   const stTag = document.getElementById('prof-status-tag');
@@ -473,7 +485,7 @@ function renderProfile() {
   if (a.status === 'inactive') {
     banner.style.display = 'flex';
     document.getElementById('prof-inactive-reason').textContent = '⚠ ' + a.inactiveReason + (a.inactiveSince ? ' · since ' + a.inactiveSince : '');
-    document.getElementById('prof-inactive-notes').textContent  = a.inactiveNotes || '';
+    document.getElementById('prof-inactive-notes').textContent = a.inactiveNotes || '';
   } else {
     banner.style.display = 'none';
   }
@@ -481,7 +493,7 @@ function renderProfile() {
   // Status button
   const stBtn = document.getElementById('btn-toggle-status');
   stBtn.textContent = a.status === 'active' ? 'Mark Inactive' : 'Reactivate';
-  stBtn.className   = 'btn btn-sm ' + (a.status === 'active' ? 'btn-red' : 'btn-green');
+  stBtn.className = 'btn btn-sm ' + (a.status === 'active' ? 'btn-red' : 'btn-green');
 
   // Promotion date — default to today
   const promoDtEl = document.getElementById('promo-date');
@@ -489,14 +501,14 @@ function renderProfile() {
 
   // Belt
   const b = BELTS[beltIdx(a.belt)];
-  document.getElementById('prof-swatch').style.background    = b.color;
-  document.getElementById('prof-belt-title').textContent     = b.name + ' Belt';
-  document.getElementById('prof-belt-title').style.color     = beltIdx(a.belt) === 0 ? '#555' : b.color;
-  document.getElementById('prof-since').textContent          = 'Since ' + (a.history && a.history[0] ? a.history[0].date : '—');
+  document.getElementById('prof-swatch').style.background = b.color;
+  document.getElementById('prof-belt-title').textContent = b.name + ' Belt';
+  document.getElementById('prof-belt-title').style.color = beltIdx(a.belt) === 0 ? '#555' : b.color;
+  document.getElementById('prof-since').textContent = 'Since ' + (a.history && a.history[0] ? a.history[0].date : '—');
 
   // Stats
-  document.getElementById('prof-sess').textContent   = a.sessions;
-  document.getElementById('prof-wins').textContent   = a.wins;
+  document.getElementById('prof-sess').textContent = a.sessions;
+  document.getElementById('prof-wins').textContent = a.wins;
   document.getElementById('prof-losses').textContent = a.losses;
   document.getElementById('prof-medals').textContent = comps.filter(c => c.athleteId === a.id && c.place === '1').length;
 
@@ -504,11 +516,11 @@ function renderProfile() {
   function setVal(id, val) {
     const el = document.getElementById(id);
     el.textContent = val || 'Not provided';
-    el.className   = 'cl-val' + (val ? '' : ' empty');
+    el.className = 'cl-val' + (val ? '' : ' empty');
   }
-  setVal('prof-email',    a.email);
-  setVal('prof-phone',    a.phone);
-  setVal('prof-addr',     [a.street, a.city, a.statzip].filter(Boolean).join(', '));
+  setVal('prof-email', a.email);
+  setVal('prof-phone', a.phone);
+  setVal('prof-addr', [a.street, a.city, a.statzip].filter(Boolean).join(', '));
   setVal('prof-physical', [a.age ? a.age + ' yrs' : null, a.weight || null, a.wclass || null].filter(Boolean).join(' · '));
 
   // Belt picker
@@ -517,12 +529,12 @@ function renderProfile() {
     const wrap = document.createElement('div');
     wrap.className = 'bp-opt';
     const sw = document.createElement('div');
-    sw.className      = 'bp-sw' + (idx === pendingBelt ? ' sel' : '');
+    sw.className = 'bp-sw' + (idx === pendingBelt ? ' sel' : '');
     sw.style.background = blt.color;
-    sw.title          = blt.name;
+    sw.title = blt.name;
     sw.dataset.beltIdx = idx;
     const nm = document.createElement('div');
-    nm.className  = 'bp-nm';
+    nm.className = 'bp-nm';
     nm.textContent = blt.name;
     wrap.appendChild(sw);
     wrap.appendChild(nm);
@@ -540,11 +552,11 @@ function renderProfile() {
   });
 
   // Skills
-  const skEl  = document.getElementById('prof-skills'); skEl.innerHTML = '';
-  const left  = document.createElement('div');
+  const skEl = document.getElementById('prof-skills'); skEl.innerHTML = '';
+  const left = document.createElement('div');
   const right = document.createElement('div');
   SKILLS.forEach((s, idx) => {
-    const val  = a.skills ? a.skills[idx] : 65;
+    const val = a.skills ? a.skills[idx] : 65;
     const html = `<div class="sk-row">
       <div class="sk-lbl">${s}</div>
       <div class="sk-track"><div class="sk-fill" style="width:${val}%"></div></div>
@@ -556,7 +568,7 @@ function renderProfile() {
   skEl.appendChild(right);
 
   // Heatmap
-  const hmEl   = document.getElementById('prof-hm');
+  const hmEl = document.getElementById('prof-hm');
   const dateSet = new Set(attLog.filter(s => s.athletes.includes(a.id)).map(s => s.rawDate || s.date));
   let hh = '';
   const now = new Date();
@@ -572,13 +584,13 @@ function renderProfile() {
   document.getElementById('prof-hm-stat').textContent = a.sessions + ' total sessions';
 
   // Competition
-  const cpEl    = document.getElementById('prof-comp'); cpEl.innerHTML = '';
+  const cpEl = document.getElementById('prof-comp'); cpEl.innerHTML = '';
   const myComps = comps.filter(c => c.athleteId === a.id);
   if (!myComps.length) { cpEl.innerHTML = '<div class="empty-state">No results yet.</div>'; }
   myComps.slice().reverse().forEach(c => {
-    const pMap        = { '1': ['cri-g','🥇','1st'], '2': ['cri-s','🥈','2nd'], '3': ['cri-s','🥉','3rd'], 'loss': ['cri-l','✕','Loss'] };
-    const [cls, ico, lbl] = pMap[c.place] || ['cri-l','?','?'];
-    const matchRec    = (c.matchesWon || c.matchesLost) ? `${c.matchesWon}-${c.matchesLost}` : '';
+    const pMap = { '1': ['cri-g', '🥇', '1st'], '2': ['cri-s', '🥈', '2nd'], '3': ['cri-s', '🥉', '3rd'], 'loss': ['cri-l', '✕', 'Loss'] };
+    const [cls, ico, lbl] = pMap[c.place] || ['cri-l', '?', '?'];
+    const matchRec = (c.matchesWon || c.matchesLost) ? `${c.matchesWon}-${c.matchesLost}` : '';
     cpEl.innerHTML += `<div class="cr">
       <div class="cri ${cls}">${ico}</div>
       <div style="flex:1">
@@ -594,6 +606,69 @@ function renderProfile() {
   });
 
   renderNotes(a);
+  renderMembership(a);
+}
+
+function renderMembership(a) {
+  document.getElementById('prof-payment-badge').innerHTML = paymentBadge(a.paymentStatus);
+
+  const lines = [];
+  if (a.lastPaymentDate) lines.push(`Last payment: ${fmtDate(a.lastPaymentDate)}`);
+  if (a.nextPaymentDue) lines.push(`Next payment due: ${fmtDate(a.nextPaymentDue)}`);
+  if (!lines.length) lines.push('No billing history yet.');
+  document.getElementById('prof-billing-info').innerHTML = lines.join('<br>');
+
+  document.getElementById('prof-payment-link-box').style.display = 'none';
+  document.getElementById('prof-payment-link-box').textContent = '';
+
+  const btn = document.getElementById('btn-send-payment-link');
+  btn.textContent = a.paymentStatus === 'active' ? 'Send New Payment Link' : 'Send Payment Link';
+}
+
+async function sendPaymentLink() {
+  const a = athletes.find(x => x.id === curAthId);
+  if (!a) return;
+  if (!a.email) { toast('Add an email address for this athlete first.'); return; }
+
+  const btn = document.getElementById('btn-send-payment-link');
+  const originalText = btn.textContent;
+  btn.textContent = 'Creating link…'; btn.disabled = true;
+
+  try {
+    const { data: { session } } = await db.auth.getSession();
+    if (!session) { toast('Your session expired — please sign in again.'); return; }
+
+    const res = await fetch('/api/create-checkout-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + session.access_token,
+      },
+      body: JSON.stringify({ athleteId: a.id }),
+    });
+    const result = await res.json();
+
+    if (!res.ok) {
+      toast('⚠ ' + (result.error || 'Could not create payment link.'));
+      return;
+    }
+
+    const box = document.getElementById('prof-payment-link-box');
+    box.textContent = result.url;
+    box.style.display = 'block';
+
+    try {
+      await navigator.clipboard.writeText(result.url);
+      toast('Payment link copied — share it with ' + a.first);
+    } catch (clipErr) {
+      toast('Payment link created — copy it below');
+    }
+  } catch (err) {
+    console.error('Create checkout session failed:', err);
+    toast('⚠ Could not create payment link — please try again.');
+  } finally {
+    btn.textContent = originalText; btn.disabled = false;
+  }
 }
 
 // ── NOTES ──────────────────────────────────────────────
@@ -631,17 +706,17 @@ function renderNotes(a) {
 function promote() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  const prevBelt    = a.belt;
+  const prevBelt = a.belt;
   const prevHistory = a.history ? [...a.history] : [];
-  const prevName    = BELTS[beltIdx(prevBelt)].name;
+  const prevName = BELTS[beltIdx(prevBelt)].name;
 
-  const promoDateEl  = document.getElementById('promo-date');
-  const promoISO     = promoDateEl && promoDateEl.value ? promoDateEl.value : todayISO();
-  const promoParts   = promoISO.split('-');
+  const promoDateEl = document.getElementById('promo-date');
+  const promoISO = promoDateEl && promoDateEl.value ? promoDateEl.value : todayISO();
+  const promoParts = promoISO.split('-');
   const promoDisplay = promoParts.length === 3
     ? new Date(+promoParts[0], +promoParts[1] - 1, +promoParts[2]).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
     : todayStr();
-  const newBeltName  = BELTS[pendingBelt].name;
+  const newBeltName = BELTS[pendingBelt].name;
 
   optimistic(
     () => {
@@ -675,7 +750,7 @@ function markInactive() {
   if (!a) return;
   const prior = { status: a.status, inactiveReason: a.inactiveReason, inactiveNotes: a.inactiveNotes, inactiveSince: a.inactiveSince };
   const reason = document.getElementById('inactive-reason').value;
-  const notes  = document.getElementById('inactive-notes').value.trim();
+  const notes = document.getElementById('inactive-notes').value.trim();
 
   closeModal('inactive-modal');
 
@@ -683,8 +758,8 @@ function markInactive() {
     () => {
       a.status = 'inactive';
       a.inactiveReason = reason;
-      a.inactiveNotes  = notes;
-      a.inactiveSince  = todayStr();
+      a.inactiveNotes = notes;
+      a.inactiveSince = todayStr();
       addAct(`${a.first} ${a.last} marked inactive — ${reason}`);
       if (curAthId === a.id) renderProfile();
       renderAthletes();
@@ -716,7 +791,7 @@ async function confirmDeleteAthlete() {
   try {
     await dbDeleteAthlete(a.id);
     athletes = athletes.filter(x => x.id !== a.id);
-    comps    = comps.filter(c => c.athleteId !== a.id);
+    comps = comps.filter(c => c.athleteId !== a.id);
     curAthId = null;
     closeModal('delete-athlete-modal');
     nav('athletes', document.querySelectorAll('.ni')[1]);
@@ -814,8 +889,8 @@ function reactivate() {
 function openEditContact() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  const fields = ['fname','lname','bg','since','email','phone','street','city','statzip','age','weight','wclass'];
-  const keys   = ['first','last','bg','since','email','phone','street','city','statzip','age','weight','wclass'];
+  const fields = ['fname', 'lname', 'bg', 'since', 'email', 'phone', 'street', 'city', 'statzip', 'age', 'weight', 'wclass'];
+  const keys = ['first', 'last', 'bg', 'since', 'email', 'phone', 'street', 'city', 'statzip', 'age', 'weight', 'wclass'];
   fields.forEach((f, i) => {
     const el = document.getElementById('e-' + f);
     if (el) el.value = a[keys[i]] || '';
@@ -828,7 +903,7 @@ function openEditContact() {
 function saveContact() {
   const a = athletes.find(x => x.id === curAthId);
   if (!a) return;
-  const fields = ['first','last','bg','since','sinceISO','email','phone','street','city','statzip','age','weight','wclass'];
+  const fields = ['first', 'last', 'bg', 'since', 'sinceISO', 'email', 'phone', 'street', 'city', 'statzip', 'age', 'weight', 'wclass'];
   const prior = Object.fromEntries(fields.map(k => [k, a[k]]));
 
   const sinceDisplay = document.getElementById('e-since').value.trim();
@@ -873,7 +948,7 @@ function saveContact() {
 
 // ── ADD ATHLETE ────────────────────────────────────────
 function openAddModal() {
-  const ids = ['m-fname','m-lname','m-bg','m-email','m-phone','m-street','m-city','m-statzip','m-age','m-weight','m-wclass','m-since-iso'];
+  const ids = ['m-fname', 'm-lname', 'm-bg', 'm-email', 'm-phone', 'm-street', 'm-city', 'm-statzip', 'm-age', 'm-weight', 'm-wclass', 'm-since-iso'];
   ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   openModal('add-modal');
 }
@@ -882,23 +957,23 @@ async function addAthlete() {
   const f = document.getElementById('m-fname').value.trim();
   const l = document.getElementById('m-lname').value.trim();
   if (!f || !l) { toast('Enter first and last name.'); return; }
-  const belt  = document.getElementById('m-belt').value;
-  const newA  = {
-    id:       newUUID(),
+  const belt = document.getElementById('m-belt').value;
+  const newA = {
+    id: newUUID(),
     first: f, last: l, belt,
-    bg:      document.getElementById('m-bg').value.trim() || 'Athlete',
-    email:   document.getElementById('m-email').value.trim(),
-    phone:   document.getElementById('m-phone').value.trim(),
-    street:  document.getElementById('m-street').value.trim(),
-    city:    document.getElementById('m-city').value.trim(),
+    bg: document.getElementById('m-bg').value.trim() || 'Athlete',
+    email: document.getElementById('m-email').value.trim(),
+    phone: document.getElementById('m-phone').value.trim(),
+    street: document.getElementById('m-street').value.trim(),
+    city: document.getElementById('m-city').value.trim(),
     statzip: document.getElementById('m-statzip').value.trim(),
-    age:     document.getElementById('m-age').value.trim(),
-    weight:  document.getElementById('m-weight').value.trim(),
-    wclass:  document.getElementById('m-wclass').value.trim(),
-    since:    (document.getElementById('m-since-iso').value
-                ? new Date(document.getElementById('m-since-iso').value + 'T00:00:00')
-                    .toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-                : todayStr()),
+    age: document.getElementById('m-age').value.trim(),
+    weight: document.getElementById('m-weight').value.trim(),
+    wclass: document.getElementById('m-wclass').value.trim(),
+    since: (document.getElementById('m-since-iso').value
+      ? new Date(document.getElementById('m-since-iso').value + 'T00:00:00')
+        .toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+      : todayStr()),
     sinceISO: document.getElementById('m-since-iso').value || todayISO(),
     photo: '', sessions: 0, wins: 0, losses: 0,
     status: 'active', inactiveReason: '', inactiveNotes: '', inactiveSince: '',
@@ -943,8 +1018,8 @@ function openAttModal() {
 }
 
 async function logAttendance() {
-  const date    = document.getElementById('att-date').value;
-  const type    = document.getElementById('att-type').value;
+  const date = document.getElementById('att-date').value;
+  const type = document.getElementById('att-type').value;
   const checked = [...document.querySelectorAll('#att-checks input:checked')].map(i => i.value);
   if (!checked.length) { toast('Select at least one athlete.'); return; }
 
@@ -980,10 +1055,10 @@ async function logAttendance() {
 
 // ── COMPETITION MODAL ──────────────────────────────────
 function openCompModal() {
-  document.getElementById('c-date').value         = todayISO();
-  document.getElementById('c-event').value        = '';
-  document.getElementById('c-div').value          = '';
-  document.getElementById('c-matches-won').value  = '';
+  document.getElementById('c-date').value = todayISO();
+  document.getElementById('c-event').value = '';
+  document.getElementById('c-div').value = '';
+  document.getElementById('c-matches-won').value = '';
   document.getElementById('c-matches-lost').value = '';
   const sel = document.getElementById('c-athlete'); sel.innerHTML = '';
   athletes.forEach(a => { sel.innerHTML += `<option value="${a.id}">${a.first} ${a.last}</option>`; });
@@ -993,16 +1068,16 @@ function openCompModal() {
 async function addComp() {
   const event = document.getElementById('c-event').value.trim();
   if (!event) { toast('Enter event name.'); return; }
-  const athleteId    = document.getElementById('c-athlete').value;
-  const date         = document.getElementById('c-date').value;
-  const div          = document.getElementById('c-div').value || 'Open';
-  const place        = document.getElementById('c-place').value;
-  const matchesWon   = parseInt(document.getElementById('c-matches-won').value,  10) || 0;
-  const matchesLost  = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
-  const newComp      = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
-  const a            = athletes.find(x => x.id === athleteId);
-  const priorWins    = a ? a.wins   : null;
-  const priorLosses  = a ? a.losses : null;
+  const athleteId = document.getElementById('c-athlete').value;
+  const date = document.getElementById('c-date').value;
+  const div = document.getElementById('c-div').value || 'Open';
+  const place = document.getElementById('c-place').value;
+  const matchesWon = parseInt(document.getElementById('c-matches-won').value, 10) || 0;
+  const matchesLost = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
+  const newComp = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
+  const a = athletes.find(x => x.id === athleteId);
+  const priorWins = a ? a.wins : null;
+  const priorLosses = a ? a.losses : null;
 
   closeModal('comp-modal');
 
@@ -1010,7 +1085,7 @@ async function addComp() {
     () => {
       comps.push(newComp);
       if (a) { a.wins += matchesWon; a.losses += matchesLost; }
-      const placeText  = { '1':'1st place','2':'2nd place','3':'3rd place','loss':'Loss' }[place] || place;
+      const placeText = { '1': '1st place', '2': '2nd place', '3': '3rd place', 'loss': 'Loss' }[place] || place;
       const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
       addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
       renderComp();
@@ -1033,14 +1108,14 @@ async function addComp() {
 function openEventModal() {
   document.getElementById('ev-name').value = '';
   document.getElementById('ev-date').value = '';
-  document.getElementById('ev-loc').value  = '';
+  document.getElementById('ev-loc').value = '';
   openModal('event-modal');
 }
 
 async function addEvent() {
   const name = document.getElementById('ev-name').value.trim();
   const date = document.getElementById('ev-date').value;
-  const loc  = document.getElementById('ev-loc').value.trim() || 'TBD';
+  const loc = document.getElementById('ev-loc').value.trim() || 'TBD';
   if (!name || !date) { toast('Enter name and date.'); return; }
   const newEv = { id: newUUID(), name, date, loc };
 
@@ -1091,12 +1166,12 @@ function saveNote() {
 }
 
 // ── EVENT DELEGATION ───────────────────────────────────
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
   const t = e.target;
 
   // Nav items
   if (t.classList.contains('ni') || t.closest('.ni')) {
-    const ni   = t.closest('.ni') || t;
+    const ni = t.closest('.ni') || t;
     const page = ni.dataset.page;
     if (page) nav(page, ni);
     return;
@@ -1110,14 +1185,14 @@ document.addEventListener('click', function(e) {
   }
 
   // Open profile
-  if (t.dataset.profile)              { openProfile(t.dataset.profile); return; }
-  if (t.closest('[data-profile]'))    { openProfile(t.closest('[data-profile]').dataset.profile); return; }
+  if (t.dataset.profile) { openProfile(t.dataset.profile); return; }
+  if (t.closest('[data-profile]')) { openProfile(t.closest('[data-profile]').dataset.profile); return; }
 
   // Mark inactive from roster
-  if (t.dataset.inactive)             { openMarkInactive(t.dataset.inactive); return; }
+  if (t.dataset.inactive) { openMarkInactive(t.dataset.inactive); return; }
 
   // Reactivate from roster
-  if (t.dataset.reactivate)           { openReactivate(t.dataset.reactivate); return; }
+  if (t.dataset.reactivate) { openReactivate(t.dataset.reactivate); return; }
 
   // Delete event
   if (t.dataset.delEvent) {
@@ -1210,29 +1285,30 @@ document.addEventListener('click', function(e) {
   }
 
   // Close modals
-  if (t.dataset.close)                  { closeModal(t.dataset.close); return; }
+  if (t.dataset.close) { closeModal(t.dataset.close); return; }
   if (t.classList.contains('modal-ov')) { t.style.display = 'none'; return; }
 
   // Top-level buttons
-  if (t.id === 'btn-add-athlete')        { openAddModal(); return; }
-  if (t.id === 'btn-log-att')            { openAttModal(); return; }
-  if (t.id === 'btn-add-comp')           { openCompModal(); return; }
-  if (t.id === 'btn-add-event')          { openEventModal(); return; }
-  if (t.id === 'btn-promote')            { promote(); return; }
-  if (t.id === 'btn-save-athlete')       { addAthlete(); return; }
-  if (t.id === 'btn-save-att')           { logAttendance(); return; }
-  if (t.id === 'btn-save-comp')          { addComp(); return; }
-  if (t.id === 'btn-save-event')         { addEvent(); return; }
-  if (t.id === 'btn-save-note')          { saveNote(); return; }
-  if (t.id === 'btn-save-contact')       { saveContact(); return; }
-  if (t.id === 'btn-edit-contact')       { openEditContact(); return; }
-  if (t.id === 'btn-confirm-inactive')        { markInactive(); return; }
-  if (t.id === 'btn-confirm-reactivate')      { reactivate(); return; }
-  if (t.id === 'btn-delete-athlete')          { openDeleteAthlete(curAthId); return; }
-  if (t.id === 'btn-invite-portal')           { inviteToPortal(); return; }
-  if (t.id === 'btn-confirm-delete-athlete')  { confirmDeleteAthlete(); return; }
-  if (t.id === 'btn-add-note')           { openModal('note-modal'); return; }
-  if (t.id === 'btn-back-athletes')      { nav('athletes', document.querySelectorAll('.ni')[1]); return; }
+  if (t.id === 'btn-add-athlete') { openAddModal(); return; }
+  if (t.id === 'btn-log-att') { openAttModal(); return; }
+  if (t.id === 'btn-add-comp') { openCompModal(); return; }
+  if (t.id === 'btn-add-event') { openEventModal(); return; }
+  if (t.id === 'btn-promote') { promote(); return; }
+  if (t.id === 'btn-save-athlete') { addAthlete(); return; }
+  if (t.id === 'btn-save-att') { logAttendance(); return; }
+  if (t.id === 'btn-save-comp') { addComp(); return; }
+  if (t.id === 'btn-save-event') { addEvent(); return; }
+  if (t.id === 'btn-save-note') { saveNote(); return; }
+  if (t.id === 'btn-save-contact') { saveContact(); return; }
+  if (t.id === 'btn-edit-contact') { openEditContact(); return; }
+  if (t.id === 'btn-confirm-inactive') { markInactive(); return; }
+  if (t.id === 'btn-confirm-reactivate') { reactivate(); return; }
+  if (t.id === 'btn-delete-athlete') { openDeleteAthlete(curAthId); return; }
+  if (t.id === 'btn-invite-portal') { inviteToPortal(); return; }
+  if (t.id === 'btn-send-payment-link') { sendPaymentLink(); return; }
+  if (t.id === 'btn-confirm-delete-athlete') { confirmDeleteAthlete(); return; }
+  if (t.id === 'btn-add-note') { openModal('note-modal'); return; }
+  if (t.id === 'btn-back-athletes') { nav('athletes', document.querySelectorAll('.ni')[1]); return; }
 
   if (t.id === 'btn-toggle-status') {
     const a = athletes.find(x => x.id === curAthId);
@@ -1245,9 +1321,9 @@ document.addEventListener('click', function(e) {
   if (t.id === 'btn-reactivate-profile') { openReactivate(curAthId); return; }
 
   // Auth buttons
-  if (t.id === 'btn-login')        { handleLogin(); return; }
-  if (t.id === 'btn-reset-pw')     { handleResetPassword(); return; }
-  if (t.id === 'btn-logout')       { handleLogout(); return; }
+  if (t.id === 'btn-login') { handleLogin(); return; }
+  if (t.id === 'btn-reset-pw') { handleResetPassword(); return; }
+  if (t.id === 'btn-logout') { handleLogout(); return; }
   if (t.id === 'btn-set-password') { handleSetNewPassword(); return; }
 
   // Dashboard roster rows
@@ -1259,12 +1335,12 @@ document.addEventListener('click', function(e) {
 });
 
 // ── SEARCH ─────────────────────────────────────────────
-document.getElementById('athlete-search').addEventListener('input', function() {
+document.getElementById('athlete-search').addEventListener('input', function () {
   renderAthletes(this.value);
 });
 
 // ── PHOTO UPLOAD ───────────────────────────────────────
-document.getElementById('prof-photo').addEventListener('change', async function(e) {
+document.getElementById('prof-photo').addEventListener('change', async function (e) {
   const file = e.target.files[0];
   if (!file) return;
   const a = athletes.find(x => x.id === curAthId);
@@ -1272,11 +1348,11 @@ document.getElementById('prof-photo').addEventListener('change', async function(
   try {
     toast('Uploading photo...');
     const url = await dbUploadPhoto(a.id, file);
-    a.photo   = url;
+    a.photo = url;
     await dbUpdateAthlete(a);
     renderProfile();
     toast('Photo updated');
-  } catch(err) {
+  } catch (err) {
     console.error('Photo upload error:', err);
     toast('Photo upload failed — check Storage bucket');
   }
@@ -1284,11 +1360,11 @@ document.getElementById('prof-photo').addEventListener('change', async function(
 
 // ── AUTH HANDLERS ──────────────────────────────────────
 async function handleLogin() {
-  const email    = document.getElementById('login-email').value.trim();
+  const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
-  const errEl    = document.getElementById('login-error');
-  errEl.style.color  = 'var(--red)';
-  errEl.textContent  = '';
+  const errEl = document.getElementById('login-error');
+  errEl.style.color = 'var(--red)';
+  errEl.textContent = '';
   if (!email || !password) { errEl.textContent = 'Enter email and password.'; return; }
   const btn = document.getElementById('btn-login');
   btn.textContent = 'Signing in…'; btn.disabled = true;
@@ -1302,8 +1378,8 @@ async function handleResetPassword() {
   const errEl = document.getElementById('login-error');
   if (!email) { errEl.style.color = 'var(--red)'; errEl.textContent = 'Enter your email first.'; return; }
   const { error } = await sendPasswordReset(email);
-  if (error) { errEl.style.color = 'var(--red)';   errEl.textContent = error.message; }
-  else        { errEl.style.color = 'var(--green)'; errEl.textContent = 'Password reset email sent!'; }
+  if (error) { errEl.style.color = 'var(--red)'; errEl.textContent = error.message; }
+  else { errEl.style.color = 'var(--green)'; errEl.textContent = 'Password reset email sent!'; }
 }
 
 async function handleLogout() {
@@ -1311,14 +1387,14 @@ async function handleLogout() {
 }
 
 async function handleSetNewPassword() {
-  const pw1   = document.getElementById('new-password').value;
-  const pw2   = document.getElementById('confirm-password').value;
+  const pw1 = document.getElementById('new-password').value;
+  const pw2 = document.getElementById('confirm-password').value;
   const errEl = document.getElementById('reset-error');
   errEl.style.color = 'var(--red)';
   errEl.textContent = '';
-  if (!pw1)          { errEl.textContent = 'Enter a new password.'; return; }
-  if (pw1.length < 6){ errEl.textContent = 'Password must be at least 6 characters.'; return; }
-  if (pw1 !== pw2)   { errEl.textContent = 'Passwords do not match.'; return; }
+  if (!pw1) { errEl.textContent = 'Enter a new password.'; return; }
+  if (pw1.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  if (pw1 !== pw2) { errEl.textContent = 'Passwords do not match.'; return; }
   const btn = document.getElementById('btn-set-password');
   btn.textContent = 'Saving…'; btn.disabled = true;
   const { error } = await db.auth.updateUser({ password: pw1 });
@@ -1328,7 +1404,7 @@ async function handleSetNewPassword() {
     document.getElementById('reset-screen').style.display = 'none';
     showLogin();
     document.getElementById('login-error').style.color = 'var(--green)';
-    document.getElementById('login-error').textContent  = 'Password updated! Please sign in.';
+    document.getElementById('login-error').textContent = 'Password updated! Please sign in.';
   }
 }
 
@@ -1337,23 +1413,23 @@ function showLogin() {
   athletes = []; comps = []; events = []; attLog = []; actLog = [];
   curAthId = null;
   document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('crm').style.display          = 'none';
+  document.getElementById('crm').style.display = 'none';
 }
 
 function showApp() {
   document.getElementById('login-screen').style.display = 'none';
-  document.getElementById('crm').style.display          = 'flex';
+  document.getElementById('crm').style.display = 'flex';
 }
 
 // ── INIT APP (after login) ─────────────────────────────
 async function initApp() {
   showApp();
   const data = await loadAllData();
-  athletes   = data.athletes;
-  comps      = data.comps;
-  events     = data.events;
-  attLog     = data.attLog;
-  actLog     = data.actLog.length
+  athletes = data.athletes;
+  comps = data.comps;
+  events = data.events;
+  attLog = data.attLog;
+  actLog = data.actLog.length
     ? data.actLog
     : [{ text: 'KONG initialized — welcome to the mat', time: 'Today' }];
   renderDashboard();
@@ -1398,7 +1474,7 @@ function handoffToPortal(session) {
   showLogin(); // default: show login while checking session
 
   const isRecovery = window.location.hash.includes('type=recovery');
-  const isInvite    = window.location.hash.includes('type=invite');
+  const isInvite = window.location.hash.includes('type=invite');
   const session = await getSession();
   if (session && !isRecovery && !isInvite) {
     if (await isAthleteSession(session)) { await rejectAthleteAndRedirect(); }
@@ -1409,7 +1485,7 @@ function handoffToPortal(session) {
     if (event === 'PASSWORD_RECOVERY') {
       if (await isAthleteSession(session)) { handoffToPortal(session); return; }
       document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('crm').style.display          = 'none';
+      document.getElementById('crm').style.display = 'none';
       document.getElementById('reset-screen').style.display = 'flex';
       return;
     }
