@@ -11,63 +11,66 @@ const db = createClient(SUPABASE_URL, SUPABASE_KEY, {
 // ── ROW MAPPERS (DB → JS) ─────────────────────────────────
 function mapAthlete(r) {
   return {
-    id:             r.id,
-    first:          r.first           || '',
-    last:           r.last            || '',
-    belt:           r.belt            || 'white',
-    bg:             r.bg              || 'Athlete',
-    email:          r.email           || '',
-    phone:          r.phone           || '',
-    street:         r.street          || '',
-    city:           r.city            || '',
-    statzip:        r.statzip         || '',
-    age:            r.age             || '',
-    weight:         r.weight          || '',
-    wclass:         r.wclass          || '',
-    since:          r.since           || '',
-    sinceISO:       r.since_iso       || '',
-    photo:          r.photo_url       || '',
-    sessions:       r.sessions        || 0,
-    wins:           r.wins            || 0,
-    losses:         r.losses          || 0,
-    status:         r.status          || 'active',
+    id: r.id,
+    first: r.first || '',
+    last: r.last || '',
+    belt: r.belt || 'white',
+    bg: r.bg || 'Athlete',
+    email: r.email || '',
+    phone: r.phone || '',
+    street: r.street || '',
+    city: r.city || '',
+    statzip: r.statzip || '',
+    age: r.age || '',
+    weight: r.weight || '',
+    wclass: r.wclass || '',
+    since: r.since || '',
+    sinceISO: r.since_iso || '',
+    photo: r.photo_url || '',
+    sessions: r.sessions || 0,
+    wins: r.wins || 0,
+    losses: r.losses || 0,
+    status: r.status || 'active',
     inactiveReason: r.inactive_reason || '',
-    inactiveNotes:  r.inactive_notes  || '',
-    inactiveSince:  r.inactive_since  || '',
-    history:        Array.isArray(r.history) ? r.history : [],
-    notes:          Array.isArray(r.notes)   ? r.notes   : [],
-    skills:         Array.isArray(r.skills)  ? r.skills  : [65,65,65,65,65,65,65,65],
+    inactiveNotes: r.inactive_notes || '',
+    inactiveSince: r.inactive_since || '',
+    history: Array.isArray(r.history) ? r.history : [],
+    notes: Array.isArray(r.notes) ? r.notes : [],
+    skills: Array.isArray(r.skills) ? r.skills : [65, 65, 65, 65, 65, 65, 65, 65],
+    paymentStatus: r.payment_status || 'inactive',
+    lastPaymentDate: r.last_payment_date || '',
+    nextPaymentDue: r.next_payment_due || '',
   };
 }
 
 function mapComp(r) {
   return {
-    id:          r.id,
-    event:       r.event_name,
-    athleteId:   r.athlete_id,
-    div:         r.division,
-    date:        r.result_date,
-    place:       r.place,
-    matchesWon:  r.matches_won  || 0,
+    id: r.id,
+    event: r.event_name,
+    athleteId: r.athlete_id,
+    div: r.division,
+    date: r.result_date,
+    place: r.place,
+    matchesWon: r.matches_won || 0,
     matchesLost: r.matches_lost || 0,
   };
 }
 
 function mapEvent(r) {
   return {
-    id:   r.id,
+    id: r.id,
     name: r.event_name,
     date: r.event_date,
-    loc:  r.event_loc,
+    loc: r.event_loc,
   };
 }
 
 function mapAtt(r) {
   return {
-    id:      r.id,
-    date:    r.session_date,
+    id: r.id,
+    date: r.session_date,
     rawDate: r.session_date_raw,
-    type:    r.session_type,
+    type: r.session_type,
     athletes: Array.isArray(r.athlete_ids) ? r.athlete_ids : [],
   };
 }
@@ -84,8 +87,8 @@ function athleteToRow(a) {
     sessions: a.sessions, wins: a.wins, losses: a.losses,
     status: a.status,
     inactive_reason: a.inactiveReason,
-    inactive_notes:  a.inactiveNotes,
-    inactive_since:  a.inactiveSince,
+    inactive_notes: a.inactiveNotes,
+    inactive_since: a.inactiveSince,
     history: a.history, notes: a.notes, skills: a.skills,
   };
 }
@@ -100,11 +103,11 @@ async function loadAllData() {
     db.from('activity_log').select('*').order('created_at', { ascending: false }).limit(20),
   ]);
   return {
-    athletes: (athR.data  || []).map(mapAthlete),
-    comps:    (cmpR.data  || []).map(mapComp),
-    events:   (evtR.data  || []).map(mapEvent),
-    attLog:   (attR.data  || []).map(mapAtt),
-    actLog:   (actR.data  || []).map(r => ({ text: r.text, time: r.time_str })),
+    athletes: (athR.data || []).map(mapAthlete),
+    comps: (cmpR.data || []).map(mapComp),
+    events: (evtR.data || []).map(mapEvent),
+    attLog: (attR.data || []).map(mapAtt),
+    actLog: (actR.data || []).map(r => ({ text: r.text, time: r.time_str })),
   };
 }
 
@@ -165,7 +168,7 @@ async function dbAddAct(text, time) {
 
 // ── PHOTO UPLOAD ──────────────────────────────────────────
 async function dbUploadPhoto(athleteId, file) {
-  const ext  = file.name.split('.').pop().toLowerCase() || 'jpg';
+  const ext = file.name.split('.').pop().toLowerCase() || 'jpg';
   const path = `${athleteId}.${ext}`;
 
   // Remove existing file first to avoid upsert conflicts

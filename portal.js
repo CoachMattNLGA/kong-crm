@@ -6,11 +6,11 @@
 'use strict';
 
 const P_BELTS = [
-  { name: 'White',  color: '#d4d4d4' },
-  { name: 'Blue',   color: '#1d4ed8' },
+  { name: 'White', color: '#d4d4d4' },
+  { name: 'Blue', color: '#1d4ed8' },
   { name: 'Purple', color: '#7c3aed' },
-  { name: 'Brown',  color: '#92400e' },
-  { name: 'Black',  color: '#111111' },
+  { name: 'Brown', color: '#92400e' },
+  { name: 'Black', color: '#111111' },
 ];
 
 const P_BELT_MAP = { white: 0, blue: 1, purple: 2, brown: 3, black: 4 };
@@ -22,11 +22,11 @@ const P_SKILLS = [
 ];
 
 const P_AVATAR_COLORS = [
-  '#B549B6','#7c3aed','#1d4ed8','#047857',
-  '#b45309','#9f1239','#0369a1','#6d28d9'
+  '#B549B6', '#7c3aed', '#1d4ed8', '#047857',
+  '#b45309', '#9f1239', '#0369a1', '#6d28d9'
 ];
 
-function pEsc(s) { return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pEsc(s) { return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
 function pCol(i) { return P_AVATAR_COLORS[i % P_AVATAR_COLORS.length]; }
 function pInitials(a) { return ((a.first ? a.first[0] : '') + (a.last ? a.last[0] : '')).toUpperCase() || 'A'; }
 function pBeltIdx(b) { return P_BELT_MAP[b] || 0; }
@@ -34,21 +34,21 @@ function pBeltCls(b) { return P_BELT_CLS[b] || 'bw'; }
 
 function pFmtDate(d) {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); }
-  catch(e) { return d; }
+  catch (e) { return d; }
 }
 
 function pFmtShort(d) {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); }
-  catch(e) { return d; }
+  catch (e) { return d; }
 }
 
 function pTimeAtNLGA(sinceISO) {
   if (!sinceISO) return null;
   try {
     const start = new Date(sinceISO);
-    const now   = new Date();
-    let years  = now.getFullYear() - start.getFullYear();
-    let months = now.getMonth()    - start.getMonth();
+    const now = new Date();
+    let years = now.getFullYear() - start.getFullYear();
+    let months = now.getMonth() - start.getMonth();
     if (months < 0) { years--; months += 12; }
     const totalMonths = years * 12 + months;
     if (totalMonths < 1) {
@@ -59,12 +59,12 @@ function pTimeAtNLGA(sinceISO) {
     if (years === 0) return months + ' mo';
     if (months === 0) return years + ' yr' + (years !== 1 ? 's' : '');
     return years + ' yr ' + months + ' mo';
-  } catch(e) { return null; }
+  } catch (e) { return null; }
 }
 
 function computeMatchRecord(comps) {
   return (comps || []).reduce((acc, c) => {
-    acc.wins   += (c.matches_won  ?? c.matchesWon  ?? 0);
+    acc.wins += (c.matches_won ?? c.matchesWon ?? 0);
     acc.losses += (c.matches_lost ?? c.matchesLost ?? 0);
     return acc;
   }, { wins: 0, losses: 0 });
@@ -80,29 +80,29 @@ function pToast(msg) {
 
 function showPortalLogin() {
   document.getElementById('portal-login').style.display = 'flex';
-  document.getElementById('portal-app').style.display   = 'none';
+  document.getElementById('portal-app').style.display = 'none';
   document.getElementById('portal-reset-screen').style.display = 'none';
 }
 
 function showPortalResetScreen() {
   document.getElementById('portal-login').style.display = 'none';
-  document.getElementById('portal-app').style.display   = 'none';
+  document.getElementById('portal-app').style.display = 'none';
   document.getElementById('portal-reset-screen').style.display = 'flex';
 }
 
 function showPortalApp() {
   document.getElementById('portal-login').style.display = 'none';
   document.getElementById('portal-reset-screen').style.display = 'none';
-  document.getElementById('portal-app').style.display   = 'block';
-  document.getElementById('portal-loading').style.display      = 'block';
-  document.getElementById('portal-error-state').style.display   = 'none';
-  document.getElementById('portal-content').style.display       = 'none';
+  document.getElementById('portal-app').style.display = 'block';
+  document.getElementById('portal-loading').style.display = 'block';
+  document.getElementById('portal-error-state').style.display = 'none';
+  document.getElementById('portal-content').style.display = 'none';
 }
 
 async function portalHandleLogin() {
-  const email    = document.getElementById('portal-email').value.trim();
+  const email = document.getElementById('portal-email').value.trim();
   const password = document.getElementById('portal-password').value;
-  const errEl    = document.getElementById('portal-error');
+  const errEl = document.getElementById('portal-error');
   errEl.style.color = 'var(--red)';
   errEl.textContent = '';
 
@@ -145,8 +145,8 @@ async function portalHandleLogout() {
 }
 
 async function portalHandleSetPassword() {
-  const pw1   = document.getElementById('portal-new-password').value;
-  const pw2   = document.getElementById('portal-confirm-password').value;
+  const pw1 = document.getElementById('portal-new-password').value;
+  const pw2 = document.getElementById('portal-confirm-password').value;
   const errEl = document.getElementById('portal-reset-error');
   errEl.style.color = 'var(--red)';
   errEl.textContent = '';
@@ -192,8 +192,8 @@ async function initPortal() {
     const data = await loadPortalData(athleteId);
 
     if (!data || !data.athlete) {
-      document.getElementById('portal-loading').style.display     = 'none';
-      document.getElementById('portal-error-state').style.display  = 'block';
+      document.getElementById('portal-loading').style.display = 'none';
+      document.getElementById('portal-error-state').style.display = 'block';
       return;
     }
 
@@ -204,13 +204,14 @@ async function initPortal() {
     renderPortalAttendance(data.athlete, data.attendance || []);
     renderPortalSkills(data.athlete);
     renderPortalCompetition(data.comps || [], record);
+    renderPortalMembership(data.athlete);
 
     document.getElementById('portal-loading').style.display = 'none';
     document.getElementById('portal-content').style.display = 'block';
 
   } catch (err) {
     console.error('Portal init error:', err);
-    document.getElementById('portal-loading').style.display    = 'none';
+    document.getElementById('portal-loading').style.display = 'none';
     document.getElementById('portal-error-state').style.display = 'block';
   }
 }
@@ -225,9 +226,9 @@ function renderPortalProfile(a, record) {
     avEl.textContent = pInitials(a);
   }
 
-  document.getElementById('pp-name').textContent         = a.first + ' ' + a.last;
-  document.getElementById('pp-member-since').textContent  = 'NLGA · Member since ' + (a.since || '—');
-  document.getElementById('pp-bg').innerHTML              = `<span class="tag tag-comp">${pEsc(a.bg || 'Athlete')}</span>`;
+  document.getElementById('pp-name').textContent = a.first + ' ' + a.last;
+  document.getElementById('pp-member-since').textContent = 'NLGA · Member since ' + (a.since || '—');
+  document.getElementById('pp-bg').innerHTML = `<span class="tag tag-comp">${pEsc(a.bg || 'Athlete')}</span>`;
 
   const stTag = document.getElementById('pp-status-tag');
   stTag.innerHTML = a.status === 'active'
@@ -245,13 +246,13 @@ function renderPortalProfile(a, record) {
 
   const b = P_BELTS[pBeltIdx(a.belt)];
   document.getElementById('pp-belt-swatch').style.background = b.color;
-  document.getElementById('pp-belt-title').textContent       = b.name + ' Belt';
-  document.getElementById('pp-belt-title').style.color       = pBeltIdx(a.belt) === 0 ? '#555' : b.color;
-  document.getElementById('pp-belt-since').textContent       = 'Since ' + (a.history && a.history[0] ? a.history[0].date : '—');
+  document.getElementById('pp-belt-title').textContent = b.name + ' Belt';
+  document.getElementById('pp-belt-title').style.color = pBeltIdx(a.belt) === 0 ? '#555' : b.color;
+  document.getElementById('pp-belt-since').textContent = 'Since ' + (a.history && a.history[0] ? a.history[0].date : '—');
 
   document.getElementById('pp-sessions').textContent = a.sessions || 0;
-  document.getElementById('pp-wins').textContent     = record.wins;
-  document.getElementById('pp-losses').textContent   = record.losses;
+  document.getElementById('pp-wins').textContent = record.wins;
+  document.getElementById('pp-losses').textContent = record.losses;
 }
 
 function renderPortalBeltHistory(a) {
@@ -271,7 +272,7 @@ function renderPortalBeltHistory(a) {
 }
 
 function renderPortalAttendance(a, attRows) {
-  const hmEl   = document.getElementById('pp-heatmap');
+  const hmEl = document.getElementById('pp-heatmap');
   const dateSet = new Set(
     attRows.map(s => s.session_date_raw || s.session_date)
   );
@@ -294,7 +295,7 @@ function renderPortalSkills(a) {
   const el = document.getElementById('pp-skills');
   el.innerHTML = '';
 
-  const leftCol  = document.createElement('div');
+  const leftCol = document.createElement('div');
   const rightCol = document.createElement('div');
 
   P_SKILLS.forEach((s, idx) => {
@@ -312,19 +313,19 @@ function renderPortalSkills(a) {
 }
 
 function renderPortalCompetition(myComps, record) {
-  const el      = document.getElementById('pp-comp');
-  const summEl  = document.getElementById('pp-comp-summary');
+  const el = document.getElementById('pp-comp');
+  const summEl = document.getElementById('pp-comp-summary');
 
-  const golds   = myComps.filter(c => c.place === '1').length;
+  const golds = myComps.filter(c => c.place === '1').length;
   const silvers = myComps.filter(c => c.place === '2').length;
 
   let summParts = [];
   if (record.wins || record.losses) summParts.push(`<span class="green">${record.wins}W</span>-<span class="red">${record.losses}L</span>`);
-  if (golds)   summParts.push(`<span class="amber">${golds} Gold</span>`);
+  if (golds) summParts.push(`<span class="amber">${golds} Gold</span>`);
   if (silvers) summParts.push(`${silvers} Silver`);
   summEl.innerHTML = summParts.length ? '· ' + summParts.join(' · ') : '';
 
-  document.getElementById('pp-medals').textContent = myComps.filter(c => ['1','2','3'].includes(c.place)).length;
+  document.getElementById('pp-medals').textContent = myComps.filter(c => ['1', '2', '3'].includes(c.place)).length;
 
   el.innerHTML = '';
   if (!myComps.length) {
@@ -334,10 +335,10 @@ function renderPortalCompetition(myComps, record) {
 
   myComps.slice().reverse().forEach(c => {
     const pMap = {
-      '1':    ['cri-g', '🥇', '1st'],
-      '2':    ['cri-s', '🥈', '2nd'],
-      '3':    ['cri-s', '🥉', '3rd'],
-      'loss': ['cri-l', '✕',  'Loss']
+      '1': ['cri-g', '🥇', '1st'],
+      '2': ['cri-s', '🥈', '2nd'],
+      '3': ['cri-s', '🥉', '3rd'],
+      'loss': ['cri-l', '✕', 'Loss']
     };
     const [cls, ico, lbl] = pMap[c.place] || ['cri-l', '?', '?'];
     const mWon = c.matches_won ?? c.matchesWon ?? 0;
@@ -359,11 +360,28 @@ function renderPortalCompetition(myComps, record) {
   });
 }
 
-document.addEventListener('click', function(e) {
+function renderPortalMembership(a) {
+  const map = {
+    active: ['pay-active', 'Active'],
+    overdue: ['pay-overdue', 'Overdue'],
+    cancelled: ['pay-cancelled', 'Cancelled'],
+    inactive: ['pay-inactive', 'No Membership'],
+  };
+  const [cls, label] = map[a.payment_status] || map.inactive;
+  document.getElementById('pp-payment-badge').innerHTML = `<span class="pay-badge ${cls}">${label}</span>`;
+
+  const lines = [];
+  if (a.last_payment_date) lines.push(`Last payment: ${pFmtDate(a.last_payment_date)}`);
+  if (a.next_payment_due) lines.push(`Next payment due: ${pFmtDate(a.next_payment_due)}`);
+  if (!lines.length) lines.push('No billing history yet. Contact your coach to set up membership billing.');
+  document.getElementById('pp-billing-info').innerHTML = lines.join('<br>');
+}
+
+document.addEventListener('click', function (e) {
   const t = e.target;
-  if (t.id === 'btn-portal-login')        { portalHandleLogin(); return; }
-  if (t.id === 'btn-portal-reset')        { portalHandleResetPassword(); return; }
-  if (t.id === 'btn-portal-logout')       { portalHandleLogout(); return; }
+  if (t.id === 'btn-portal-login') { portalHandleLogin(); return; }
+  if (t.id === 'btn-portal-reset') { portalHandleResetPassword(); return; }
+  if (t.id === 'btn-portal-logout') { portalHandleLogout(); return; }
   if (t.id === 'btn-portal-set-password') { portalHandleSetPassword(); return; }
 });
 
@@ -392,10 +410,10 @@ document.getElementById('portal-email').addEventListener('keydown', e => {
     }
   }
 
-  const hash       = window.location.hash;
+  const hash = window.location.hash;
   const isRecovery = hash.includes('type=recovery');
-  const isInvite   = hash.includes('type=invite');
-  const session    = await portalGetSession();
+  const isInvite = hash.includes('type=invite');
+  const session = await portalGetSession();
 
   if (session && (isRecovery || isInvite)) {
     showPortalResetScreen();
