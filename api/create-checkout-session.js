@@ -5,8 +5,11 @@ const Stripe = require('stripe');
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SITE_URL = process.env.SITE_URL;
-const stripe = Stripe(process.env.STRIPE_SECRET_KEY);
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const PRICE_ID = process.env.STRIPE_PRICE_ID;
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+const stripe = Stripe(STRIPE_SECRET_KEY);
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -14,19 +17,32 @@ module.exports = async (req, res) => {
         return;
     }
 
-    if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !SITE_URL || !process.env.STRIPE_SECRET_KEY || !PRICE_ID) {
-        res.status(500).json({ error: 'Server is missing required environment variables.' });
+    if (
+        !SUPABASE_URL ||
+        !SERVICE_ROLE_KEY ||
+        !SITE_URL ||
+        !STRIPE_SECRET_KEY ||
+        !PRICE_ID ||
+        !RESEND_API_KEY
+    ) {
+        res.status(500).json({
+            error: 'Server is missing required environment variables.',
+        });
         return;
     }
 
     const authHeader = req.headers.authorization || '';
-    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const token = authHeader.startsWith('Bearer ')
+        ? authHeader.slice(7)
+        : null;
+
     if (!token) {
         res.status(401).json({ error: 'Missing Authorization header.' });
         return;
     }
 
     const { athleteId } = req.body || {};
+
     if (!athleteId) {
         res.status(400).json({ error: 'athleteId is required.' });
         return;
@@ -34,7 +50,9 @@ module.exports = async (req, res) => {
 
     const admin = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-    const { data: callerData, error: callerErr } = await admin.auth.getUser(token);
+    const { data: callerData, error: callerErr } =
+        await admin.auth.getUser(token);
+
     if (callerErr || !callerData || !callerData.user) {
         res.status(401).json({ error: 'Invalid or expired session.' });
         return;
@@ -47,7 +65,9 @@ module.exports = async (req, res) => {
         .maybeSingle();
 
     if (callerLink) {
-        res.status(403).json({ error: 'Only coaches can create payment links.' });
+        res.status(403).json({
+            error: 'Only coaches can create payment links.',
+        });
         return;
     }
 
@@ -63,17 +83,22 @@ module.exports = async (req, res) => {
     }
 
     if (!athlete.email) {
-        res.status(400).json({ error: `${athlete.first} ${athlete.last} has no email on file. Add one before sending a payment link.` });
+        res.status(400).json({
+            error: `${athlete.first} ${athlete.last} has no email on file. Add one before sending a payment link.`,
+        });
         return;
     }
 
     try {
+        // 1. Create Stripe checkout session
         const sessionParams = {
             mode: 'subscription',
             line_items: [{ price: PRICE_ID, quantity: 1 }],
             client_reference_id: athlete.id,
             metadata: { athlete_id: athlete.id },
-            subscription_data: { metadata: { athlete_id: athlete.id } },
+            subscription_data: {
+                metadata: { athlete_id: athlete.id },
+            },
             success_url: `${SITE_URL}/?billing=success`,
             cancel_url: `${SITE_URL}/?billing=cancelled`,
         };
@@ -84,11 +109,69 @@ module.exports = async (req, res) => {
             sessionParams.customer_email = athlete.email;
         }
 
-        const checkoutSession = await stripe.checkout.sessions.create(sessionParams);
+        const checkoutSession =
+            await stripe.checkout.sessions.create(sessionParams);
 
-        res.status(200).json({ url: checkoutSession.url });
+        // 2. Send the payment link through Resend
+        const emailRes = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${RESEND_API_KEY}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                from: 'KONG CRM <noreply@kongbynlga.com>',
+                to: [athlete.email],
+                subject: 'Your KONG CRM payment link',
+                html: `
+                    <p>Hi ${athlete.first || ''},</p>
+
+                    <p>
+                        Please use the link below to complete your subscription payment:
+                    </p>
+
+                    <p>
+                        <a href="${checkoutSession.url}">
+                            Complete Payment
+                        </a>
+                    </p>
+
+                    <p>
+                        If you have any questions, please contact your coach.
+                    </p>
+
+                    <p>Thanks,<br>KONG CRM</p>
+                `,
+            }),
+        });
+
+        const emailData = await emailRes.json();
+
+        // Log Resend errors, but don't lose the Stripe checkout URL
+        if (!emailRes.ok) {
+            console.error('Resend email error:', emailData);
+
+            res.status(500).json({
+                error: 'Payment link was created, but the email could not be sent.',
+                paymentUrl: checkoutSession.url,
+            });
+            return;
+        }
+
+        console.log('Payment link email sent:', emailData);
+
+        // 3. Return the checkout URL to the frontend
+        res.status(200).json({
+            url: checkoutSession.url,
+            emailSent: true,
+        });
     } catch (err) {
         console.error('Stripe checkout session error:', err);
-        res.status(500).json({ error: err.message || 'Could not create checkout session.' });
+
+        res.status(500).json({
+            error:
+                err.message ||
+                'Could not create checkout session.',
+        });
     }
 };

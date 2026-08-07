@@ -639,51 +639,7 @@ function renderMembership(a) {
   btn.textContent = a.paymentStatus === 'active' ? 'Send New Payment Link' : 'Send Payment Link';
 }
 
-async function sendPaymentLink() {
-  const a = athletes.find(x => x.id === curAthId);
-  if (!a) return;
-  if (!a.email) { toast('Add an email address for this athlete first.'); return; }
-
-  const btn = document.getElementById('btn-send-payment-link');
-  const originalText = btn.textContent;
-  btn.textContent = 'Creating link…'; btn.disabled = true;
-
-  try {
-    const { data: { session } } = await db.auth.getSession();
-    if (!session) { toast('Your session expired — please sign in again.'); return; }
-
-    const res = await fetch('/api/create-checkout-session', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + session.access_token,
-      },
-      body: JSON.stringify({ athleteId: a.id }),
-    });
-    const result = await res.json();
-
-    if (!res.ok) {
-      toast('⚠ ' + (result.error || 'Could not create payment link.'));
-      return;
-    }
-
-    const box = document.getElementById('prof-payment-link-box');
-    box.textContent = result.url;
-    box.style.display = 'block';
-
-    try {
-      await navigator.clipboard.writeText(result.url);
-      toast('Payment link copied — share it with ' + a.first);
-    } catch (clipErr) {
-      toast('Payment link created — copy it below');
-    }
-  } catch (err) {
-    console.error('Create checkout session failed:', err);
-    toast('⚠ Could not create payment link — please try again.');
-  } finally {
-    btn.textContent = originalText; btn.disabled = false;
-  }
-}
+async function sendPaymentLink() { const a = athletes.find(x => x.id === curAthId); if (!a) return; if (!a.email) { toast('Add an email address for this athlete first.'); return; } const btn = document.getElementById('btn-send-payment-link'); const originalText = btn.textContent; btn.textContent = 'Creating link…'; btn.disabled = true; try { const { data: { session } } = await db.auth.getSession(); if (!session) { toast('Your session expired — please sign in again.'); return; } const res = await fetch('/api/create-checkout-session', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token, }, body: JSON.stringify({ athleteId: a.id }), }); const result = await res.json(); if (!res.ok) { toast('⚠ ' + (result.error || 'Could not create payment link.')); return; } const box = document.getElementById('prof-payment-link-box'); box.textContent = result.url; box.style.display = 'block'; try { await navigator.clipboard.writeText(result.url); if (result.emailSent) { toast(`Payment link emailed to ${a.first} and copied`); } else { toast(`Payment link created and copied — share it with ${a.first}`); } } catch (clipErr) { if (result.emailSent) { toast(`Payment link emailed to ${a.first}`); } else { toast('Payment link created — copy it below'); } } } catch (err) { console.error('Create checkout session failed:', err); toast('⚠ Could not create payment link — please try again.'); } finally { btn.textContent = originalText; btn.disabled = false; } }
 
 // ── NOTES ──────────────────────────────────────────────
 function renderNotes(a) {
