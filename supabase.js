@@ -84,7 +84,7 @@ function athleteToRow(a) {
     weight: a.weight, wclass: a.wclass,
     since: a.since, since_iso: a.sinceISO,
     photo_url: a.photo,
-    sessions: a.sessions, wins: a.wins, losses: a.losses,
+    sessions: a.sessions,
     status: a.status,
     inactive_reason: a.inactiveReason,
     inactive_notes: a.inactiveNotes,

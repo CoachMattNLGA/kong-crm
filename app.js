@@ -107,6 +107,15 @@ function timeAtNLGA(sinceISO) {
 
 function fmtContact(a) { return a.email || a.phone || '—'; }
 
+function matchRecord(athleteId = null) {
+  const rows = athleteId ? comps.filter(c => c.athleteId === athleteId) : comps;
+  return rows.reduce((acc, c) => {
+    acc.wins += c.matchesWon || 0;
+    acc.losses += c.matchesLost || 0;
+    return acc;
+  }, { wins: 0, losses: 0 });
+}
+
 function paymentBadge(status) {
   const map = {
     active: ['pay-active', 'Active'],
@@ -252,16 +261,20 @@ function renderDashboard() {
 
   // Win/Loss
   const wlEl = document.getElementById('d-wl'); wlEl.innerHTML = '';
-  athletes.filter(a => a.wins + a.losses > 0).slice(0, 5).forEach(a => {
-    const t = a.wins + a.losses || 1;
-    const p = Math.round((a.wins / t) * 100);
-    wlEl.innerHTML += `<div class="wl-row">
-      <div class="wl-n">${a.first} ${a.last[0]}.</div>
-      <div class="wl-w">${a.wins}W</div>
-      <div class="wl-bg"><div class="wl-wf" style="width:${p}%"></div></div>
-      <div class="wl-l">${a.losses}L</div>
-    </div>`;
-  });
+  athletes
+    .map(a => ({ a, rec: matchRecord(a.id) }))
+    .filter(({ rec }) => rec.wins + rec.losses > 0)
+    .slice(0, 5)
+    .forEach(({ a, rec }) => {
+      const t = rec.wins + rec.losses || 1;
+      const p = Math.round((rec.wins / t) * 100);
+      wlEl.innerHTML += `<div class="wl-row">
+        <div class="wl-n">${a.first} ${a.last[0]}.</div>
+        <div class="wl-w">${rec.wins}W</div>
+        <div class="wl-bg"><div class="wl-wf" style="width:${p}%"></div></div>
+        <div class="wl-l">${rec.losses}L</div>
+      </div>`;
+    });
 
   // Activity log
   const lEl = document.getElementById('d-log'); lEl.innerHTML = '';
@@ -304,7 +317,7 @@ function renderAthletes(search = '') {
       <div class="td"><span class="sb-active">● Active</span></div>
       <div class="td tdm" style="font-size:11px">${fmtContact(a)}</div>
       <div class="td tdm">${a.sessions}</div>
-      <div class="td"><span style="color:var(--green)">${a.wins}W</span> <span style="color:var(--text3)">-</span> <span style="color:var(--red)">${a.losses}L</span></div>
+      <div class="td">${(() => { const r = matchRecord(a.id); return `<span style="color:var(--green)">${r.wins}W</span> <span style="color:var(--text3)">-</span> <span style="color:var(--red)">${r.losses}L</span>`; })()}</div>
       <div class="td">${paymentBadge(a.paymentStatus)}</div>
       <div class="td" style="display:flex;gap:4px">
         <button class="btn btn-sm" data-profile="${a.id}">View</button>
@@ -508,8 +521,9 @@ function renderProfile() {
 
   // Stats
   document.getElementById('prof-sess').textContent = a.sessions;
-  document.getElementById('prof-wins').textContent = a.wins;
-  document.getElementById('prof-losses').textContent = a.losses;
+  const profRecord = matchRecord(a.id);
+  document.getElementById('prof-wins').textContent = profRecord.wins;
+  document.getElementById('prof-losses').textContent = profRecord.losses;
   document.getElementById('prof-medals').textContent = comps.filter(c => c.athleteId === a.id && c.place === '1').length;
 
   // Contact
@@ -1076,29 +1090,26 @@ async function addComp() {
   const matchesLost = parseInt(document.getElementById('c-matches-lost').value, 10) || 0;
   const newComp = { id: newUUID(), event, athleteId, div, date, place, matchesWon, matchesLost };
   const a = athletes.find(x => x.id === athleteId);
-  const priorWins = a ? a.wins : null;
-  const priorLosses = a ? a.losses : null;
 
   closeModal('comp-modal');
 
   await optimistic(
     () => {
       comps.push(newComp);
-      if (a) { a.wins += matchesWon; a.losses += matchesLost; }
       const placeText = { '1': '1st place', '2': '2nd place', '3': '3rd place', 'loss': 'Loss' }[place] || place;
       const matchLabel = (matchesWon || matchesLost) ? ` (${matchesWon}-${matchesLost})` : '';
       addAct(`${a ? a.first + ' ' + a.last : 'Athlete'} — ${placeText} at ${event}${matchLabel}`);
       renderComp();
+      renderDashboard();
+      if (curAthId === athleteId) renderProfile();
       toast('Result saved');
     },
-    async () => {
-      await dbInsertComp(newComp);
-      if (a) await dbUpdateAthlete(a);
-    },
+    () => dbInsertComp(newComp),
     () => {
       comps = comps.filter(c => c.id !== newComp.id);
-      if (a) { a.wins = priorWins; a.losses = priorLosses; }
       renderComp();
+      renderDashboard();
+      if (curAthId === athleteId) renderProfile();
     },
     'Could not save competition result — please try again.'
   );
