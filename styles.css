@@ -108,11 +108,6 @@ body {
 .logo-img {
   width: 36px;
   height: 36px;
-  border-radius: 8px;
-  background: var(--p);
-  box-shadow: 0 0 18px rgba(181, 73, 182, 0.30);
-  padding: 4px;
-  filter: none;
 }
 
 .l1 {
