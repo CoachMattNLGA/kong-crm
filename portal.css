@@ -26,9 +26,6 @@
 .portal-login-header img {
   width: 42px;
   height: 42px;
-  filter: invert(1);
-  display: block;
-  margin: 0 auto 12px;
 }
 
 .portal-login-title {
@@ -40,7 +37,7 @@
 
 .portal-login-subtitle {
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  color: rgba(255, 255, 255, 0.3);
   letter-spacing: 2px;
   text-transform: uppercase;
   font-family: 'Inter', sans-serif;
@@ -49,8 +46,8 @@
 }
 
 .portal-login-box {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 10px;
   padding: 22px;
 }
@@ -78,10 +75,6 @@
 .portal-logo img {
   width: 30px;
   height: 30px;
-  border-radius: 6px;
-  background: var(--p);
-  box-shadow: 0 0 14px rgba(181,73,182,0.25);
-  padding: 3px;
 }
 
 .portal-logo-text {
@@ -223,9 +216,17 @@
   letter-spacing: 0.5px;
 }
 
-.portal-comp-summary .green { color: var(--green); }
-.portal-comp-summary .red { color: var(--red); }
-.portal-comp-summary .amber { color: var(--amber); }
+.portal-comp-summary .green {
+  color: var(--green);
+}
+
+.portal-comp-summary .red {
+  color: var(--red);
+}
+
+.portal-comp-summary .amber {
+  color: var(--amber);
+}
 
 /* ── ERROR STATE ──────────────────────────────────────── */
 .portal-error {
@@ -270,7 +271,9 @@
 }
 
 @keyframes portal-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ── MOBILE REFINEMENTS ───────────────────────────────── */
