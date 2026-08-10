@@ -42,10 +42,37 @@ function pFmtShort(d) {
   catch (e) { return d; }
 }
 
-function pTimeAtNLGA(sinceISO) {
-  if (!sinceISO) return null;
+function pParseSinceText(str) {
+  if (!str || typeof str !== 'string') return null;
+  const yearMatch = str.match(/\b(20\d\d|19\d\d)\b/);
+  if (!yearMatch) return null;
+  const year = parseInt(yearMatch[1], 10);
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const lower = str.toLowerCase();
+  let month = 0;
+  for (let i = 0; i < months.length; i++) {
+    if (lower.includes(months[i])) {
+      month = i;
+      break;
+    }
+  }
+  return new Date(year, month, 1);
+}
+
+function pTimeAtNLGA(sinceISO, sinceDisplay = null) {
+  let start = null;
+  if (sinceISO) {
+    const d = new Date(sinceISO.includes('T') ? sinceISO : sinceISO + 'T00:00:00');
+    if (!isNaN(d.getTime())) start = d;
+  }
+  const parsedDisplay = pParseSinceText(sinceDisplay);
+  if (parsedDisplay) {
+    if (!start || Math.abs(start.getFullYear() - parsedDisplay.getFullYear()) >= 1) {
+      start = parsedDisplay;
+    }
+  }
+  if (!start) return null;
   try {
-    const start = new Date(sinceISO);
     const now = new Date();
     let years = now.getFullYear() - start.getFullYear();
     let months = now.getMonth() - start.getMonth();
@@ -236,7 +263,7 @@ function renderPortalProfile(a, record) {
     : '<span class="tag tag-inact">Inactive</span>';
 
   const timeEl = document.getElementById('pp-time-nlga');
-  const t = pTimeAtNLGA(a.since_iso || a.sinceISO);
+  const t = pTimeAtNLGA(a.since_iso || a.sinceISO, a.since);
   if (t) {
     timeEl.innerHTML = `⏱ Time at NLGA: <span>${t}</span>`;
     timeEl.style.display = 'flex';

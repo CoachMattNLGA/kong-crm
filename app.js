@@ -80,15 +80,42 @@ function fmtShort(d) {
   catch (e) { return d; }
 }
 
+function parseSinceText(str) {
+  if (!str || typeof str !== 'string') return null;
+  const yearMatch = str.match(/\b(20\d\d|19\d\d)\b/);
+  if (!yearMatch) return null;
+  const year = parseInt(yearMatch[1], 10);
+  const months = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+  const lower = str.toLowerCase();
+  let month = 0;
+  for (let i = 0; i < months.length; i++) {
+    if (lower.includes(months[i])) {
+      month = i;
+      break;
+    }
+  }
+  return new Date(year, month, 1);
+}
+
 /**
  * TIME AT NLGA
- * Auto-calculates from sinceISO (YYYY-MM-DD).
+ * Auto-calculates from sinceISO (YYYY-MM-DD) or sinceDisplay fallback.
  * Returns a short string like "2 yrs 3 mo" or "8 mo" or "3 wks"
  */
-function timeAtNLGA(sinceISO) {
-  if (!sinceISO) return null;
+function timeAtNLGA(sinceISO, sinceDisplay = null) {
+  let start = null;
+  if (sinceISO) {
+    const d = new Date(sinceISO.includes('T') ? sinceISO : sinceISO + 'T00:00:00');
+    if (!isNaN(d.getTime())) start = d;
+  }
+  const parsedDisplay = parseSinceText(sinceDisplay);
+  if (parsedDisplay) {
+    if (!start || Math.abs(start.getFullYear() - parsedDisplay.getFullYear()) >= 1) {
+      start = parsedDisplay;
+    }
+  }
+  if (!start) return null;
   try {
-    const start = new Date(sinceISO);
     const now = new Date();
     let years = now.getFullYear() - start.getFullYear();
     let months = now.getMonth() - start.getMonth();
@@ -483,7 +510,7 @@ function renderProfile() {
 
   // Time at NLGA
   const timeEl = document.getElementById('prof-time-nlga');
-  const t = timeAtNLGA(a.sinceISO);
+  const t = timeAtNLGA(a.sinceISO, a.since);
   if (t) { timeEl.innerHTML = `⏱ Time at NLGA: <span>${t}</span>`; timeEl.style.display = 'flex'; }
   else { timeEl.style.display = 'none'; }
 
