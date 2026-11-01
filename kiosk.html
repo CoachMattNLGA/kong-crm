@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>KONG — Check In</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="KONG athlete check-in kiosk.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="KONG Check-In">
+  <meta name="theme-color" content="#111114">
+  <meta name="format-detection" content="telephone=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="/kiosk.css">
+</head>
+
+<body>
+
+  <div class="kiosk-app" id="kiosk-app">
+
+    <header class="kiosk-header">
+      <div class="kiosk-brand" id="kiosk-brand" aria-label="KONG">
+        <img src="/assets/logo.png" alt="" class="kiosk-logo">
+        <div class="kiosk-brand-text">
+          <span class="kiosk-brand-name">KONG</span>
+          <span class="kiosk-brand-sub">Check-In</span>
+        </div>
+      </div>
+      <div class="kiosk-header-tag" aria-hidden="true">No Limits Grappling Academy</div>
+    </header>
+
+    <main class="kiosk-main">
+
+      <!-- STAFF SETUP — shown only when no valid kiosk code is stored. -->
+      <section class="screen setup-screen" id="setup-screen" hidden>
+        <div class="setup-card">
+          <img src="/assets/logo.png" alt="" class="setup-logo">
+          <h1 class="setup-title">KONG</h1>
+          <p class="setup-kicker">Staff setup</p>
+          <p class="setup-copy">Enter the kiosk code to load the athlete list on this iPad.</p>
+
+          <label class="setup-label" for="kiosk-code">Kiosk code</label>
+          <input class="setup-input" id="kiosk-code" type="password" inputmode="text" autocomplete="off"
+            autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" placeholder="Enter code">
+
+          <button class="btn-kiosk btn-primary setup-submit" id="btn-save-code" type="button">Start kiosk</button>
+          <p class="setup-error" id="setup-error" role="alert"></p>
+        </div>
+      </section>
+
+      <!-- MAIN KIOSK — name search and tiles. -->
+      <section class="screen roster-screen" id="roster-screen" hidden>
+        <div class="search-wrap">
+          <label class="visually-hidden" for="athlete-search">Search your name</label>
+          <input class="search-input" id="athlete-search" type="search" inputmode="search" autocomplete="off"
+            autocapitalize="words" autocorrect="off" spellcheck="false" enterkeyhint="search"
+            placeholder="Search your name">
+        </div>
+
+        <div class="roster-status" id="roster-status" role="status" aria-live="polite"></div>
+
+        <div class="roster-scroll" id="roster-scroll">
+          <div class="roster-grid" id="roster-grid"></div>
+          <div class="roster-empty" id="roster-empty" hidden>No names match that search.</div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- CHECK-IN CONFIRMATION — auto-cancels after 10 seconds. -->
+  <div class="overlay" id="confirm-overlay" hidden>
+    <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+      <p class="modal-kicker">Check in</p>
+      <h2 class="modal-title" id="confirm-title">Check in?</h2>
+      <p class="modal-copy">Tap Yes to check in for today.</p>
+      <div class="modal-actions">
+        <button class="btn-kiosk btn-secondary" id="btn-confirm-cancel" type="button">Cancel</button>
+        <button class="btn-kiosk btn-primary" id="btn-confirm-yes" type="button">Yes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN STAFF RESET — opened by holding the logo for 5 seconds. -->
+  <div class="overlay" id="reset-overlay" hidden>
+    <div class="modal reset-modal" role="dialog" aria-modal="true" aria-labelledby="reset-title">
+      <p class="modal-kicker">Staff reset</p>
+      <h2 class="modal-title" id="reset-title">Reset this kiosk?</h2>
+      <p class="modal-copy">This removes the saved kiosk code from this iPad. Staff will need to enter it again.</p>
+      <div class="modal-actions">
+        <button class="btn-kiosk btn-secondary" id="btn-reset-cancel" type="button">Cancel</button>
+        <button class="btn-kiosk btn-danger" id="btn-reset-confirm" type="button">Reset kiosk</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT — shown for about 4 seconds. -->
+  <div class="overlay result-overlay" id="result-overlay" hidden>
+    <div class="result-card" id="result-card" role="status" aria-live="assertive">
+      <div class="result-icon" id="result-icon" aria-hidden="true">✓</div>
+      <p class="result-message" id="result-message"></p>
+    </div>
+  </div>
+
+  <script src="/kiosk.js"></script>
+</body>
+
+</html>
